@@ -1,25 +1,13 @@
-import os
 import http.client
-from dotenv import load_dotenv
 
-# Load environment variables from .env
-load_dotenv()
-
-RAPIDAPI_KEY = os.getenv("RAPID_KEY")
-RAPIDAPI_HOST = os.getenv("RAPID_HOST")
-
-conn = http.client.HTTPSConnection(RAPIDAPI_HOST)
+conn = http.client.HTTPSConnection("jsearch.p.rapidapi.com")
 
 headers = {
-    'x-rapidapi-key': RAPIDAPI_KEY,
-    'x-rapidapi-host': RAPIDAPI_HOST
+    'x-rapidapi-key': "44a467a97bmshac69335af424410p1089bajsn5df057aa9768",
+    'x-rapidapi-host': "jsearch.p.rapidapi.com"
 }
 
-conn.request(
-    "GET",
-    "/estimated-salary?job_title=python%20developer&location=new%20york&location_type=ANY&years_of_experience=ALL",
-    headers=headers
-)
+conn.request("GET", "/search?query=developer%20jobs%20in%20chicago&page=1&num_pages=1&country=in&date_posted=all", headers=headers)
 
 res = conn.getresponse()
 data = res.read()
