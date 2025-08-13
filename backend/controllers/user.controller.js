@@ -63,7 +63,7 @@ export const registerUser = asyncHandler(async (req, res) => {
  */
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email }).populate("resumes");
+  const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
     res.status(200).json({
@@ -99,7 +99,6 @@ export const allUsers = asyncHandler(async (req, res) => {
   const users = await User.find(keyword)
     .find({ _id: { $ne: req.user._id } })
     .select("-password")
-    .populate("resumes");
 
   res.json(users);
 });
