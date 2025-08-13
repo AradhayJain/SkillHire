@@ -2,7 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 
 
-export const uploadOnCloudinary = async (localFilePath) => {
+const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
     console.log("Uploading file:", localFilePath);
@@ -21,3 +21,4 @@ export const uploadOnCloudinary = async (localFilePath) => {
     return null;
   }
 };
+export default uploadOnCloudinary;
