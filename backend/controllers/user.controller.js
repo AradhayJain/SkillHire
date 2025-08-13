@@ -5,7 +5,7 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
 
 /**
  * @desc Register a new user
- * @route POST /api/users
+ * @route POST /api/user/register
  * @access Public
  */
 export const registerUser = asyncHandler(async (req, res) => {
@@ -58,7 +58,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
 /**
  * @desc Authenticate user & get token
- * @route POST /api/users/login
+ * @route POST /api/user/login
  * @access Public
  */
 export const loginUser = asyncHandler(async (req, res) => {
@@ -82,7 +82,7 @@ export const loginUser = asyncHandler(async (req, res) => {
 
 /**
  * @desc Get all users (search)
- * @route GET /api/users?search=
+ * @route GET /api/user
  * @access Private
  */
 export const allUsers = asyncHandler(async (req, res) => {
