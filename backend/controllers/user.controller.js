@@ -47,8 +47,7 @@ export const registerUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       PhoneNumber: user.PhoneNumber,
-      pic: user.pic,
-      token: generateToken(user._id),
+      pic: user.pic
     });
   } else {
     res.status(400);
