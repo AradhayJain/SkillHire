@@ -1,6 +1,7 @@
 import {Resume} from "../models/resume.model.js";
 import asyncHandler from "express-async-handler";
 import uploadOnCloudinary from "../utils/cloudinary.js";
+import axios from "axios";
 
 export const uploadResume = asyncHandler(async (req, res) => {
     const { userId } = req.body;
@@ -68,14 +69,30 @@ export const updateAtsScore = asyncHandler(async (req, res) => {
 });
 
 export const updateAnalyticsData = asyncHandler(async (req, res) => {
-    const { analyticsData } = req.body;
     const { resumeId } = req.params;
-    if (!analyticsData || !resumeId) {
+    const {cloudinaryPath} = req.body;
+
+    if (!resumeId) {
         res.status(400);
-        throw new Error("Analytics data and resume ID are required");
+        throw new Error("Resume ID is required");
+    }
+    if(!cloudinaryPath) {
+        res.status(400);
+        throw new Error("Cloudinary path is required");
     }
     try {
-        const updatedResume = await Resume.findByIdAndUpdate(resumeId, { analyticsData:analyticsData }, { new: true });
+        const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_details", {
+            pdf_url: cloudinaryPath
+        });
+
+        const analyticsData = flaskResponse.data;
+
+        const updatedResume = await Resume.findByIdAndUpdate(
+            resumeId,
+            { analyticsData },
+            { new: true }
+        );
+
         if (!updatedResume) {
             res.status(404);
             throw new Error("Resume not found");
@@ -84,8 +101,10 @@ export const updateAnalyticsData = asyncHandler(async (req, res) => {
             message: "Analytics data updated successfully",
             resume: updatedResume,
         });
+
     } catch (error) {
         res.status(500);
         throw new Error("Error updating analytics data: " + error.message);
     }
-});    
+});
+  
