@@ -119,4 +119,21 @@ export const updateAnalyticsData = asyncHandler(async (req, res) => {
         throw new Error("Error updating analytics data: " + error.message);
     }
 });
-  
+
+export const getResumes = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    if (!userId) {
+        res.status(400);
+        throw new Error("User ID is required");
+    }
+
+    try {
+        const resumes = await Resume.find({ userId })
+            .populate("userId", "username email");
+
+        res.status(200).json(resumes);
+    } catch (error) {
+        res.status(500);
+        throw new Error("Error fetching resumes: " + error.message);
+    }
+});

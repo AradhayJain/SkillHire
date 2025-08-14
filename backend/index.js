@@ -6,7 +6,7 @@ import MongoDB  from "./utils/MongoDb.js";
 import uploadOnCloudinary from "./utils/cloudinary.js";
 import userRoutes from "./routes/user.routes.js";
 import resumeRoutes from "./routes/resume.routes.js";
-
+import postRoutes from "./routes/post.routes.js";
 
 dotenv.config({});
 cloudinary.config({
@@ -27,6 +27,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/user", userRoutes);
 app.use("/api/resume", resumeRoutes);
+app.use("/api/post", postRoutes);
 
 
 app.listen(PORT, () => {
