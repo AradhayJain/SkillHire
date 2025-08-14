@@ -9,6 +9,7 @@ import CommunityPage from './pages/CommunityPage';
 import ResumeUpload from './pages/ResumeUpload';
 import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
+import CommunityChat from './pages/CommunityChat';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/login" element={<AuthPage mode="login" />} />
             <Route path="/auth/signup" element={<AuthPage mode="signup" />} />
+            <Route path="/dashboard/community/chat" element={<CommunityChat />} />
             <Route path="/resumes" element={<ResumesPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />

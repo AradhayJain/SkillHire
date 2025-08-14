@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import { Router, useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const stats = [
     {
       icon: Target,
@@ -221,19 +223,19 @@ const Dashboard = () => {
         <Card className="p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+            <button onClick={()=>navigate("/resume-upload-image")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
               <FileText size={24} className="text-gray-600 mb-2" />
               <span className="text-sm font-medium text-gray-700">Upload Resume</span>
             </button>
-            <button className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+            <button onClick={()=>navigate("/jobs")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
               <Briefcase size={24} className="text-gray-600 mb-2" />
               <span className="text-sm font-medium text-gray-700">Find Jobs</span>
             </button>
-            <button className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+            <button onClick={()=>navigate("/analytics")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
               <Target size={24} className="text-gray-600 mb-2" />
               <span className="text-sm font-medium text-gray-700">Check ATS Score</span>
             </button>
-            <button className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+            <button onClick={()=>navigate("/community")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
               <Users size={24} className="text-gray-600 mb-2" />
               <span className="text-sm font-medium text-gray-700">Join Community</span>
             </button>
