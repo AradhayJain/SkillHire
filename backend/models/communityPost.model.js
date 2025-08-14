@@ -4,11 +4,11 @@ const communitySchema = new mongoose.Schema({
     description: String,
     upvotes: { type: Number, default: 0 },
     downvotes: { type: Number, default: 0 },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    resumeId: { type: Schema.Types.ObjectId, ref: 'Resume' ,required: false },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    resumeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resume' ,required: false },
     tags: [String],
     comments: [{
-      userId: { type: Schema.Types.ObjectId, ref: 'User' },
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       commentText: String,
       createdAt: { type: Date, default: Date.now }
     }]

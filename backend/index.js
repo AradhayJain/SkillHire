@@ -3,8 +3,9 @@ import cors from "cors";
 import {v2 as cloudinary} from 'cloudinary'
 import dotenv from "dotenv";
 import MongoDB  from "./utils/MongoDb.js";
-import userRoutes from "./routes/user.routes.js";
 import uploadOnCloudinary from "./utils/cloudinary.js";
+import userRoutes from "./routes/user.routes.js";
+import resumeRoutes from "./routes/resume.routes.js";
 
 
 dotenv.config({});
@@ -25,6 +26,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/user", userRoutes);
+app.use("/api/resume", resumeRoutes);
 
 
 app.listen(PORT, () => {
