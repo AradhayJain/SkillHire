@@ -7,14 +7,19 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     console.log("Uploading file:", localFilePath);
     console.log("File size (bytes):", fs.statSync(localFilePath).size);
+
+    // Always use auto detection for resource type
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto"
+      use_filename: true,
+      unique_filename: false
     });
 
-    fs.unlinkSync(localFilePath);
-    return response;
+    fs.unlinkSync(localFilePath); // cleanup local file after upload
+    return response.url; // return direct usable URL
   } catch (error) {
     console.error("Cloudinary Upload Error:", error);
+
+    // Cleanup even if upload fails
     try {
       if (fs.existsSync(localFilePath)) {
         fs.unlinkSync(localFilePath);
@@ -25,4 +30,5 @@ const uploadOnCloudinary = async (localFilePath) => {
     return null;
   }
 };
+
 export default uploadOnCloudinary;

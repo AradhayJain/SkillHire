@@ -4,7 +4,7 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
 import axios from "axios";
 
 export const uploadResume = asyncHandler(async (req, res) => {
-    const { userId } = req.body;
+    const userId = req.user?._id ;
     
     if (!userId || !req.file) {
         res.status(400);
@@ -21,7 +21,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
     
         const resumeData = {
             userId,
-            cloudinaryPath: cloudinaryResult.secure_url,
+            cloudinaryPath: cloudinaryResult,
             atsScore: 0, // Default ATS score, can be updated later
             analyticsData: {}, // Placeholder for analytics data
             updatesRemaining: 0, // Default updates remaining

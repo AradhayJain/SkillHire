@@ -9,9 +9,9 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
  * @access Public
  */
 export const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password,PhoneNumber } = req.body;
+  const { username,name, email, password,PhoneNumber } = req.body;
 
-  if (!name || !email || !password || !PhoneNumber) {
+  if (!username || !email || !password || !PhoneNumber) {
     res.status(400);
     throw new Error("Please fill in all required fields");
   }
@@ -34,6 +34,7 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({
+    username,
     name,
     email,
     password,
