@@ -19,10 +19,13 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/auth/login" element={<AuthPage mode="login" />} />
-            <Route path="/auth/signup" element={<AuthPage mode="signup" />} />
+            {/* Default /auth route will show the signup form */}
+            <Route path="/auth" element={<AuthPage type="signup" />} /> 
+            {/* Corrected 'mode' to 'type' to match the AuthPage component's prop */}
+            <Route path="/auth/login" element={<AuthPage type="login" />} />
+            <Route path="/auth/signup" element={<AuthPage type="signup"/>} />
             <Route path="/community/chat" element={<CommunityChat />} />
+            <Route path="/community/chat/:userId" element={<CommunityChat />} />
             <Route path="/resumes" element={<ResumesPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
