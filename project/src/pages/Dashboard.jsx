@@ -1,247 +1,287 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  TrendingUp, 
-  FileText, 
-  Briefcase, 
+  LayoutDashboard, 
   Users, 
+  FileText,
+  X,
+  Plus,
+  ArrowLeft,
+  Briefcase,
   Target,
-  Calendar,
-  Activity,
-  Award
+  BrainCircuit,
+  BarChart2,
+  Send,
+  UploadCloud
 } from 'lucide-react';
-import Card from '../components/ui/Card';
-import Badge from '../components/ui/Badge';
-import { Router, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
+// Enhanced Resume Card Component (No changes needed here)
+const ResumeCard = ({ resume, onSelect, onDelete }) => {
+  return (
+    <motion.div
+      layoutId={`resume-card-${resume.id}`}
+      onClick={() => onSelect(resume)}
+      className="bg-white rounded-lg shadow-md cursor-pointer hover:shadow-xl transition-shadow overflow-hidden group"
+    >
+      <div className="p-4 border-b border-slate-200">
+        <h3 className="font-semibold text-slate-800 truncate">{resume.title}</h3>
+        <p className="text-xs text-slate-500">Last updated: {resume.lastUpdated}</p>
+      </div>
+      <div className="p-4 flex-grow flex flex-col items-center justify-center text-slate-300">
+        <FileText size={48} />
+      </div>
+      <div className="p-3 bg-slate-50 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+            <Target size={14} className="text-indigo-600" />
+            <span className="text-sm font-medium text-slate-700">{resume.atsScore}% ATS Score</span>
+        </div>
+        <button 
+          onClick={(e) => {
+              e.stopPropagation();
+              onDelete(resume.id);
+          }}
+          className="p-1 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 hover:text-red-600"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+// Sidebar Component (No changes needed here)
+const Sidebar = ({ items, brandName="ResumeAI" }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    return (
+        <aside className="w-60 bg-slate-800 text-slate-300 p-6 flex flex-col flex-shrink-0">
+            <div className="flex items-center gap-3 mb-10">
+                <BrainCircuit size={32} className="text-indigo-400"/>
+                <span className="text-xl font-bold text-white">{brandName}</span>
+            </div>
+            <nav className="flex flex-col space-y-2">
+                {items.map(item => (
+                  <button 
+                    key={item.label} 
+                    onClick={() => navigate(item.path)}
+                    className={`flex items-center space-x-3 p-3 rounded-lg transition-colors text-sm font-medium
+                        ${location.pathname === item.path 
+                            ? 'bg-slate-900 text-white' 
+                            : 'hover:bg-slate-700 hover:text-white'
+                        }`}
+                  >
+                    <item.icon size={20} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+            </nav>
+        </aside>
+    );
+}
+
+// Main Dashboard Component
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const stats = [
-    {
-      icon: Target,
-      title: 'ATS Score',
-      value: '92%',
-      change: '+5%',
-      trend: 'up',
-      color: 'text-green-600'
-    },
-    {
-      icon: FileText,
-      title: 'Resumes Uploaded',
-      value: '12',
-      change: '+3',
-      trend: 'up',
-      color: 'text-blue-600'
-    },
-    {
-      icon: Briefcase,
-      title: 'Applications Sent',
-      value: '28',
-      change: '+7',
-      trend: 'up',
-      color: 'text-purple-600'
-    },
-    {
-      icon: Users,
-      title: 'Jobs Saved',
-      value: '45',
-      change: '+12',
-      trend: 'up',
-      color: 'text-orange-600'
-    }
-  ];
+  const [resumes, setResumes] = useState([
+    { id: 1, title: 'Senior Software Engineer', lastUpdated: '2 days ago', atsScore: 92 },
+    { id: 2, title: 'Lead Product Manager', lastUpdated: '1 week ago', atsScore: 85 },
+    { id: 3, title: 'UX/UI Designer v2', lastUpdated: '3 hours ago', atsScore: 88 },
+  ]);
+  
+  const [view, setView] = useState('grid'); // 'grid', 'detail', 'add'
+  const [selectedResume, setSelectedResume] = useState(null);
+  const [newResumeTitle, setNewResumeTitle] = useState('');
 
-  const recentActivity = [
-    {
-      type: 'resume',
-      title: 'Resume uploaded: Senior Developer Resume',
-      time: '2 hours ago',
-      icon: FileText,
-      color: 'bg-blue-100 text-blue-600'
-    },
-    {
-      type: 'job',
-      title: 'Applied to Frontend Developer at TechCorp',
-      time: '5 hours ago',
-      icon: Briefcase,
-      color: 'bg-green-100 text-green-600'
-    },
-    {
-      type: 'ats',
-      title: 'ATS Score improved to 92%',
-      time: '1 day ago',
-      icon: TrendingUp,
-      color: 'bg-purple-100 text-purple-600'
-    },
-    {
-      type: 'community',
-      title: 'New comment on your resume post',
-      time: '2 days ago',
-      icon: Users,
-      color: 'bg-orange-100 text-orange-600'
-    }
-  ];
+  // --- Handlers ---
+  const handleDeleteResume = (id) => {
+    setResumes(prev => prev.filter(resume => resume.id !== id));
+  };
+  
+  const handleAddResume = (e) => {
+    e.preventDefault();
+    if (!newResumeTitle.trim()) return;
+    const newId = resumes.length > 0 ? Math.max(...resumes.map(r => r.id)) + 1 : 1;
+    const newResume = {
+      id: newId,
+      title: newResumeTitle,
+      lastUpdated: 'Just now',
+      atsScore: Math.floor(Math.random() * (95 - 70 + 1) + 70),
+    };
+    setResumes(prev => [newResume, ...prev]);
+    setNewResumeTitle('');
+    setView('grid');
+  };
 
-  const recommendations = [
-    {
-      title: 'Optimize Resume Keywords',
-      description: 'Add more relevant keywords to improve ATS compatibility',
-      priority: 'high'
-    },
-    {
-      title: 'Update Profile Photo',
-      description: 'Professional photos increase profile views by 40%',
-      priority: 'medium'
-    },
-    {
-      title: 'Complete Skills Assessment',
-      description: 'Validate your skills to show expertise to employers',
-      priority: 'low'
-    }
+  const handleSelectResume = (resume) => {
+    setSelectedResume(resume);
+    setView('detail');
+  };
+
+  const handleBackToGrid = () => {
+    setView('grid');
+    setTimeout(() => setSelectedResume(null), 300);
+  };
+  
+  // --- Sidebar Configurations ---
+  const mainSidebarItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: Users, label: 'Community', path: '/community' },
+    { icon: BarChart2, label: 'Analytics', path: '/analytics' },
   ];
+  
+  const detailSidebarItems = [
+    { icon: FileText, label: 'Main', path: '/resume/main' },
+    { icon: Briefcase, label: 'Job Finder', path: '/resume/jobs' },
+    { icon: Target, label: 'ATS score', path: '/resume/ats-score' },
+    { icon: BrainCircuit, label: 'Ask AI', path: '/resume/ask-ai' },
+    { icon: BarChart2, label: 'Analytics', path: '/resume/analytics' },
+    { icon: Send, label: 'Applied Jobs', path: '/resume/applied-jobs' },
+  ];
+  
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    in: { opacity: 1, y: 0 },
+    out: { opacity: 0, y: -20 },
+  };
+
+  const pageTransition = {
+    type: 'tween',
+    ease: 'anticipate',
+    duration: 0.5,
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-primary-900 to-primary-700 rounded-lg p-6 text-white"
-      >
-        <h1 className="text-2xl font-bold mb-2">Welcome back, John! 👋</h1>
-        <p className="opacity-90">
-          You're doing great! Your ATS score improved by 5% this week. Keep optimizing to land more interviews.
-        </p>
-      </motion.div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card className="p-6 hover:shadow-lg transition-shadow" hover>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg bg-gray-100 ${stat.color}`}>
-                    <stat.icon size={24} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                </div>
-                <Badge variant="success" className="text-xs">
-                  {stat.change}
-                </Badge>
+    <div className="flex h-screen bg-slate-100 font-sans">
+      {/* --- CONDITIONAL SIDEBAR LOGIC --- */}
+      {view === 'grid' && <Sidebar items={mainSidebarItems} />}
+      {view === 'detail' && selectedResume && <Sidebar items={detailSidebarItems} brandName={selectedResume.title} />}
+      {/* No sidebar is rendered for the 'add' view */}
+      
+      <main className="flex-1 p-8 overflow-y-auto relative">
+        <AnimatePresence mode="wait">
+          {view === 'grid' && (
+            <motion.div
+              key="grid"
+              variants={pageVariants}
+              initial="initial"
+              animate="in"
+              exit="out"
+              transition={pageTransition}
+            >
+              <h1 className="text-3xl font-bold text-slate-800 mb-6">Your Resumes</h1>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {resumes.map(resume => (
+                  <ResumeCard 
+                    key={resume.id} 
+                    resume={resume}
+                    onSelect={handleSelectResume}
+                    onDelete={handleDeleteResume}
+                  />
+                ))}
               </div>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+              <button 
+                onClick={() => setView('add')}
+                className="fixed bottom-8 right-8 w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-indigo-700 hover:scale-110 transition-all"
+                aria-label="Add New Resume"
+              >
+                <Plus size={28} />
+              </button>
+            </motion.div>
+          )}
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-              <Activity size={20} className="text-gray-400" />
-            </div>
-            
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className={`p-2 rounded-full ${activity.color}`}>
-                    <activity.icon size={16} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <button className="mt-4 text-sm text-primary-900 hover:text-primary-800 font-medium">
-              View all activity →
-            </button>
-          </Card>
-        </motion.div>
-
-        {/* Recommendations */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Recommendations</h2>
-              <Award size={20} className="text-gray-400" />
-            </div>
-            
-            <div className="space-y-4">
-              {recommendations.map((rec, index) => (
-                <div key={index} className="border-l-4 border-primary-200 pl-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">{rec.title}</h4>
-                      <p className="text-xs text-gray-600 mt-1">{rec.description}</p>
+          {view === 'detail' && selectedResume && (
+            <motion.div
+              key="detail"
+              variants={pageVariants}
+              initial="initial"
+              animate="in"
+              exit="out"
+              transition={pageTransition}
+            >
+                <button 
+                    onClick={handleBackToGrid} 
+                    className="absolute top-8 right-8 flex items-center px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
+                >
+                    <ArrowLeft size={16} className="mr-2" />
+                    Back to Dashboard
+                </button>
+                <motion.div layoutId={`resume-card-${selectedResume.id}`} className="bg-white rounded-lg shadow-xl p-8 max-w-4xl mx-auto mt-4">
+                     <div className="flex justify-between items-start">
+                        <div>
+                            <h1 className="text-3xl font-bold text-slate-800 mb-2">{selectedResume.title}</h1>
+                            <p className="text-slate-500 mb-6">ATS Score: {selectedResume.atsScore}%</p>
+                        </div>
+                        <div className="text-right">
+                            <h2 className="text-lg font-semibold text-slate-700 mb-4">Update Resume</h2>
+                            <button className="w-full px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-700 transition-colors">
+                                UPDATE
+                            </button>
+                        </div>
+                     </div>
+                    <div className="w-full h-[60vh] bg-slate-50 rounded-md border-2 border-dashed flex items-center justify-center mt-4">
+                        <p className="text-slate-400">Full resume preview would appear here.</p>
                     </div>
-                    <Badge 
-                      variant={rec.priority === 'high' ? 'error' : rec.priority === 'medium' ? 'warning' : 'default'}
-                      size="sm"
-                    >
-                      {rec.priority}
-                    </Badge>
+                </motion.div>
+            </motion.div>
+          )}
+
+          {view === 'add' && (
+            <motion.div
+              key="add"
+              variants={pageVariants}
+              initial="initial"
+              animate="in"
+              exit="out"
+              transition={pageTransition}
+              className="max-w-3xl mx-auto"
+            >
+              <h1 className="text-3xl font-bold text-slate-800 mb-6">Add New Resume</h1>
+              <form onSubmit={handleAddResume} className="bg-white p-8 rounded-xl shadow-lg space-y-6">
+                <div>
+                  <label htmlFor="resumeTitle" className="block text-sm font-medium text-slate-700 mb-1">Resume Title</label>
+                  <input 
+                    type="text"
+                    id="resumeTitle"
+                    value={newResumeTitle}
+                    onChange={(e) => setNewResumeTitle(e.target.value)}
+                    placeholder="e.g., Senior Software Engineer"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Upload File</label>
+                  <div className="mt-2 flex justify-center rounded-lg border-2 border-dashed border-slate-300 px-6 py-10">
+                    <div className="text-center">
+                      <UploadCloud className="mx-auto h-12 w-12 text-slate-400" />
+                      <div className="mt-4 flex text-sm leading-6 text-slate-600">
+                        <label
+                          htmlFor="file-upload"
+                          className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
+                        >
+                          <span>Upload a file</span>
+                          <input id="file-upload" name="file-upload" type="file" className="sr-only" />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs leading-5 text-slate-500">PDF, DOCX up to 10MB</p>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-            
-            <button className="mt-4 text-sm text-primary-900 hover:text-primary-800 font-medium">
-              View all recommendations →
-            </button>
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button onClick={()=>navigate("/resume-upload-image")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
-              <FileText size={24} className="text-gray-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">Upload Resume</span>
-            </button>
-            <button onClick={()=>navigate("/jobs")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
-              <Briefcase size={24} className="text-gray-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">Find Jobs</span>
-            </button>
-            <button onClick={()=>navigate("/analytics")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
-              <Target size={24} className="text-gray-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">Check ATS Score</span>
-            </button>
-            <button onClick={()=>navigate("/community")} className="flex flex-col items-center p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-300 hover:bg-primary-50 transition-colors">
-              <Users size={24} className="text-gray-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">Join Community</span>
-            </button>
-          </div>
-        </Card>
-      </motion.div>
+                <div className="flex justify-end gap-4 pt-4">
+                  <button type="button" onClick={() => setView('grid')} className="px-6 py-2 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
+                    Cancel
+                  </button>
+                  <button type="submit" className="px-6 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                    Save Resume
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
     </div>
   );
 };
