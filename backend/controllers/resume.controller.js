@@ -46,27 +46,39 @@ export const updateResume = asyncHandler(async (req, res) => {
 });
 
 export const updateAtsScore = asyncHandler(async (req, res) => {
-    const { atsScore } = req.body;
     const { resumeId } = req.params;
-    if (!atsScore || !resumeId) {
+    const {cloudinaryPath} = req.body;
+    if (!cloudinaryPath) {
         res.status(400);
-        throw new Error("ATS score and resume ID are required");
+        throw new Error("Cloudinary path is required");
     }
+
+    if (!resumeId) {
+        res.status(400);
+        throw new Error("Resume ID is required");
+    }
+
     try {
-        const updatedResume = await Resume.findByIdAndUpdate(resumeId, { atsScore }, { new: true });
-        if (!updatedResume) {
-            res.status(404);
-            throw new Error("Resume not found");
-        }
+        const flaskResponse = await axios.post("http://127.0.0.1:5000/calculate_ats", {
+            pdf_url: cloudinaryPath
+        });
+        const atsScore = flaskResponse.data.ats_score;
+        const updatedResume = await Resume.findByIdAndUpdate(
+            resumeId,
+            { atsScore },
+            { new: true }
+        );
         res.status(200).json({
             message: "ATS score updated successfully",
             resume: updatedResume,
         });
+
     } catch (error) {
         res.status(500);
         throw new Error("Error updating ATS score: " + error.message);
     }
 });
+
 
 export const updateAnalyticsData = asyncHandler(async (req, res) => {
     const { resumeId } = req.params;
