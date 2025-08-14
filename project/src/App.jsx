@@ -22,7 +22,7 @@ function App() {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/login" element={<AuthPage mode="login" />} />
             <Route path="/auth/signup" element={<AuthPage mode="signup" />} />
-            <Route path="/dashboard/community/chat" element={<CommunityChat />} />
+            <Route path="/community/chat" element={<CommunityChat />} />
             <Route path="/resumes" element={<ResumesPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
