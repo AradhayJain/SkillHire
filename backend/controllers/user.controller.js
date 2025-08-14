@@ -8,53 +8,62 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
  * @route POST /api/user/register
  * @access Public
  */
-export const registerUser = asyncHandler(async (req, res) => {
-  const { username,name, email, password,PhoneNumber } = req.body;
 
-  if (!username || !email || !password || !PhoneNumber) {
+export const registerUser = asyncHandler(async (req, res) => {
+  console.log(req.body);
+  console.log(req.file);
+
+  const { username, name, email, password,PhoneNumber } = req.body; // removed 'type'
+
+  if (!name || !email || !password) {
     res.status(400);
-    throw new Error("Please fill in all required fields");
+    throw new Error("Please fill all required fields");
   }
 
+  // Upload pic to Cloudinary
+  const picUpload = await uploadOnCloudinary(req.file?.path);
+  if (!picUpload) {
+    res.status(400);
+    throw new Error("Profile picture is required");
+  }
+
+  // Check if user already exists
   const userExists = await User.findOne({ email });
   if (userExists) {
     res.status(400);
     throw new Error("User already exists");
   }
 
-  let picUrl = "";
-  if (req.file) {
-    const cloudinaryResult = await uploadOnCloudinary(req.file.path);
-    if (cloudinaryResult) {
-      picUrl = cloudinaryResult.secure_url;
-    } else {
-      res.status(500);
-      throw new Error("Image upload failed");
-    }
-  }
-
+  // Create user
   const user = await User.create({
     username,
     name,
     email,
     password,
     PhoneNumber,
-    pic: picUrl || undefined,
+    pic: picUpload,
+    subscriptionType: "Free Tier", // default subscriptionType
+    lastLogin: new Date() // current date
   });
 
   if (user) {
     res.status(201).json({
       _id: user._id,
+      username: user.username,
       name: user.name,
       email: user.email,
+      pic: user.pic,
+      subscriptionType: user.subscriptionType,
       PhoneNumber: user.PhoneNumber,
-      pic: user.pic
+      lastLogin: user.lastLogin,
+      token: generateToken(user._id),
     });
   } else {
     res.status(400);
-    throw new Error("Invalid user data");
+    throw new Error("Failed to create user");
   }
 });
+
 
 /**
  * @desc Authenticate user & get token
@@ -68,10 +77,13 @@ export const loginUser = asyncHandler(async (req, res) => {
   if (user && (await user.matchPassword(password))) {
     res.status(200).json({
       _id: user._id,
+      username: user.username,
       name: user.name,
       email: user.email,
       PhoneNumber: user.PhoneNumber,
       pic: user.pic,
+      subscriptionType: user.subscriptionType,
+      lastLogin: user.lastLogin,
       token: generateToken(user._id),
     });
   } else {
