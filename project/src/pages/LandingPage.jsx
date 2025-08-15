@@ -71,7 +71,7 @@ const Navbar = ({ toggleTheme, currentTheme }) => {
               {currentTheme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
             </button>
             <Link to="/auth/login" className="hidden sm:block"><Button variant="outline" size="md">Sign In</Button></Link>
-            <Link to="/auth"><Button size="md">Get Started</Button></Link>
+            <Link to="/auth/signup"><Button size="md">Get Started</Button></Link>
           </div>
         </div>
       </div>
@@ -187,7 +187,7 @@ const LandingPage = () => {
                 Transform your resume, discover perfect job matches, and get ahead with our intelligent career platform.
               </motion.p>
               <motion.div className="flex gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.0 }}>
-                <Link to="/auth"><Button size="lg">Get Started Free <ArrowRight size={20} className="ml-2" /></Button></Link>
+                <Link to="/auth/signup"><Button size="lg">Get Started Free <ArrowRight size={20} className="ml-2" /></Button></Link>
               </motion.div>
             </motion.div>
             <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }}>
@@ -291,7 +291,7 @@ const LandingPage = () => {
                                 <ul className="space-y-4 mb-8 flex-grow">
                                     {plan.features.map((feature) => <li key={feature} className="flex items-start"><Check size={16} className="text-green-500 mr-3 mt-1 flex-shrink-0" /><span>{feature}</span></li>)}
                                 </ul>
-                                <Link to="/auth"><Button variant={plan.popular ? 'primary' : 'outline'} className="w-full">Get Started</Button></Link>
+                                <Link to="/auth/signup"><Button variant={plan.popular ? 'primary' : 'outline'} className="w-full">Get Started</Button></Link>
                             </Card>
                         </motion.div>
                     ))}

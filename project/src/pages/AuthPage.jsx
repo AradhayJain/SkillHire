@@ -77,7 +77,22 @@ const AuthPage = ({ type }) => {
   });
 
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+
+  // Effect to sync state with the `type` prop from the router
+  useEffect(() => {
+    setIsLogin(type === 'login');
+    setError('');
+    setFormData({ username: '', name: '', email: '', password: '', confirmPassword: '', PhoneNumber: '', pic: null });
+  }, [type]);
+
+  // Effect to redirect if user is already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,14 +100,9 @@ const AuthPage = ({ type }) => {
     setLoading(true);
 
     try {
-      if (!isLogin && formData.password !== formData.confirmPassword) {
-        throw new Error('Passwords do not match');
-      }
-
-      let res;
       if (isLogin) {
-        // LOGIN: Send JSON
-        res = await fetch('http://localhost:3000/api/user/login', {
+        // --- LOGIN LOGIC ---
+        const res = await fetch('http://localhost:3000/api/user/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -100,9 +110,22 @@ const AuthPage = ({ type }) => {
             password: formData.password
           })
         });
-        
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.message || 'Login failed. Please check your credentials.');
+        }
+
+        const data = await res.json();
+        login(data); // Save token/user info in context
+        navigate('/dashboard'); // Navigate to dashboard on successful login
+
       } else {
-        // REGISTER: Send FormData
+        // --- REGISTRATION LOGIC ---
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+
         const data = new FormData();
         data.append('username', formData.username);
         data.append('name', formData.name);
@@ -111,23 +134,19 @@ const AuthPage = ({ type }) => {
         data.append('PhoneNumber', formData.PhoneNumber);
         if (formData.pic) data.append('pic', formData.pic);
 
-        res = await fetch('http://localhost:3000/api/user/register', {
+        const res = await fetch('http://localhost:3000/api/user/register', {
           method: 'POST',
           body: data
         });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.message || 'Registration failed. Please try again.');
+        }
+        
+        // On successful registration, navigate to the login page
+        navigate('/auth/login');
       }
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || 'Something went wrong');
-      }
-
-      const data = await res.json();
-
-      // Save token/user info in context
-      login(data);
-
-      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -141,9 +160,12 @@ const AuthPage = ({ type }) => {
   };
 
   const toggleAuthMode = () => {
-    setIsLogin(!isLogin);
-    setError('');
-    setFormData({ username: '', name: '', email: '', password: '', confirmPassword: '', PhoneNumber: '', pic: null });
+    // Navigate to the correct route, the useEffect will handle state changes
+    if (isLogin) {
+      navigate("/auth/signup");
+    } else {
+      navigate("/auth/login");
+    }
   };
 
   const formVariants = {

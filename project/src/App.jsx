@@ -10,6 +10,7 @@ import ResumeUpload from './pages/ResumeUpload';
 import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
 import CommunityChat from './pages/CommunityChat';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -17,20 +18,54 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50 font-inter">
           <Routes>
+            {/* --- Public Routes --- */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            {/* Default /auth route will show the signup form */}
-            <Route path="/auth" element={<AuthPage type="signup" />} /> 
-            {/* Corrected 'mode' to 'type' to match the AuthPage component's prop */}
             <Route path="/auth/login" element={<AuthPage type="login" />} />
-            <Route path="/auth/signup" element={<AuthPage type="signup"/>} />
-            <Route path="/community/chat" element={<CommunityChat />} />
-            <Route path="/community/chat/:userId" element={<CommunityChat />} />
-            <Route path="/resumes" element={<ResumesPage />} />
-            <Route path="/jobs" element={<JobsPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/community" element={<CommunityPage />} />
-            <Route path="/resume-upload-image" element={<ResumeUpload />} />
+            <Route path="/auth/signup" element={<AuthPage type="signup" />} />
+
+            {/* --- Protected Routes --- */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/community" 
+              element={
+                <ProtectedRoute>
+                  <CommunityPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/community/chat" 
+              element={
+                <ProtectedRoute>
+                  <CommunityChat />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/community/chat/:userId" 
+              element={
+                <ProtectedRoute>
+                  <CommunityChat />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
+                <ProtectedRoute>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              } 
+            />
+            {/* Add other protected routes here in the same way */}
+
           </Routes>
         </div>
       </Router>
