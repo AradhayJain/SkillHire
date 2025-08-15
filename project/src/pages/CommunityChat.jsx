@@ -10,10 +10,36 @@ import {
   Hash,
   AtSign,
   User,
-  Settings
+  Settings,
+  Sun,
+  Moon,
+  X
 } from 'lucide-react';
 import { useNavigate, useParams } from "react-router-dom";
-import Button from '../components/ui/Button';
+import Button from '../components/ui/Button'; // Assuming this is a custom component
+
+// --- Custom Hook for Theme Management ---
+const useTheme = () => {
+  const [theme, setTheme] = useState('light');
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(savedTheme);
+  }, []);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
+  return [theme, toggleTheme];
+};
+
 
 // --- Helper to process messages for grouping ---
 const processMessages = (messages) => {
@@ -29,7 +55,12 @@ const processMessages = (messages) => {
 const CommunityChat = () => {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
-  const { userId } = useParams(); // Get user ID from URL if available
+  const { userId } = useParams();
+  const [theme, toggleTheme] = useTheme();
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+
+  const [activeChat, setActiveChat] = useState({ type: 'channel', name: 'general' });
   
   const [messages, setMessages] = useState([
     { id: 1, user: 'Sarah Chen', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', message: 'Hey everyone! Just wanted to share that I got the job! Thanks for all the resume feedback 🎉', timestamp: '2:30 PM' },
@@ -77,26 +108,32 @@ const CommunityChat = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100 text-slate-800">
+    <div className="flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
       {/* Left Sidebar: Channels & DMs */}
-      <nav className="w-64 bg-slate-200 flex-shrink-0 flex flex-col">
-        <div className="p-4 border-b border-slate-300">
-          <h1 className="text-lg font-bold">ResumeAI Community</h1>
+      <aside className={`fixed lg:relative z-40 inset-y-0 left-0 w-64 bg-slate-200 dark:bg-slate-800 flex-shrink-0 flex flex-col transition-transform duration-300 ease-in-out ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+        <div className="p-4 border-b border-slate-300 dark:border-slate-700 flex items-center justify-between">
+          <h1 className="text-lg font-bold">Community Chat</h1>
+          <button onClick={() => setLeftSidebarOpen(false)} className="lg:hidden p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white"><X size={20}/></button>
+        </div>
+        <div className="p-2">
+            <button onClick={() => navigate('/community')} className="w-full flex items-center gap-2 p-2 rounded-md bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600 font-semibold text-sm">
+                <ArrowLeft size={16} /> Back to Community
+            </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
             <div>
               <h2 className="px-2 text-xs font-bold uppercase text-slate-500 mb-1">Channels</h2>
-              <a href="#" className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-300"><Hash size={16} /> general</a>
-              <a href="#" className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-300"><Hash size={16} /> resume-feedback</a>
+              <button onClick={() => setActiveChat({type: 'channel', name: 'general'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'general' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><Hash size={16} /> general</button>
+              <button onClick={() => setActiveChat({type: 'channel', name: 'resume-feedback'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'resume-feedback' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><Hash size={16} /> resume-feedback</button>
             </div>
             <div>
               <h2 className="px-2 text-xs font-bold uppercase text-slate-500 mb-1 mt-4">Direct Messages</h2>
-              <a href="#" className="flex items-center gap-2 p-2 rounded-md bg-blue-200 text-blue-800 font-semibold"><AtSign size={16}/> Sarah Chen</a>
-              <a href="#" className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-300"><AtSign size={16}/> Michael Rodriguez</a>
+              <button onClick={() => setActiveChat({type: 'dm', name: 'Sarah Chen'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'Sarah Chen' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><AtSign size={16}/> Sarah Chen</button>
+              <button onClick={() => setActiveChat({type: 'dm', name: 'Michael Rodriguez'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'Michael Rodriguez' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><AtSign size={16}/> Michael Rodriguez</button>
             </div>
         </div>
-        <div className="p-2 border-t border-slate-300">
-            <div className="flex items-center justify-between p-2 rounded-md hover:bg-slate-300 cursor-pointer">
+        <div className="p-2 border-t border-slate-300 dark:border-slate-700">
+            <div className="flex items-center justify-between p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer">
                 <div className="flex items-center gap-2">
                     <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100" className="w-8 h-8 rounded-full" />
                     <span className="text-sm font-semibold">You</span>
@@ -104,25 +141,31 @@ const CommunityChat = () => {
                 <Settings size={16} />
             </div>
         </div>
-      </nav>
+      </aside>
 
       {/* Center: Main Chat Pane */}
-      <main className="flex-1 flex flex-col bg-white">
-        <header className="flex items-center justify-between p-4 border-b border-slate-200 flex-shrink-0">
+      <main className="flex-1 flex flex-col bg-white dark:bg-slate-900">
+        <header className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="p-1 text-slate-500 hover:text-slate-800 md:hidden"><ArrowLeft size={20}/></button>
+                <button onClick={() => setLeftSidebarOpen(true)} className="p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white lg:hidden"><Hash size={20}/></button>
                 <div className="flex items-center gap-2">
                     <div className="relative">
                         <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100" className="w-9 h-9 rounded-full"/>
                         <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-white"></span>
                     </div>
                     <div>
-                        <h2 className="text-base font-semibold">Sarah Chen</h2>
+                        <h2 className="text-base font-semibold">{activeChat.name}</h2>
                         <p className="text-xs text-slate-500">Active now</p>
                     </div>
                 </div>
             </div>
-            <button className="p-2 rounded-full hover:bg-slate-100"><MoreVertical size={20}/></button>
+            <div className="flex items-center gap-2">
+                <button onClick={() => setRightSidebarOpen(true)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"><Users size={20}/></button>
+                <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                </button>
+                <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><MoreVertical size={20}/></button>
+            </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
@@ -137,8 +180,8 @@ const CommunityChat = () => {
               { !msg.isOwn && !msg.isGroupStart && <div className="w-8"/> }
 
               <div className={`flex flex-col max-w-lg ${msg.isOwn ? 'items-end' : 'items-start'}`}>
-                { !msg.isOwn && msg.isGroupStart && <p className="text-xs text-slate-500 mb-1 ml-3">{msg.user}</p> }
-                <div className={`px-4 py-2 rounded-2xl ${msg.isOwn ? 'bg-blue-600 text-white rounded-br-lg' : 'bg-slate-200 text-slate-800 rounded-bl-lg'}`}>
+                { !msg.isOwn && msg.isGroupStart && <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 ml-3">{msg.user}</p> }
+                <div className={`px-4 py-2 rounded-2xl ${msg.isOwn ? 'bg-blue-600 text-white rounded-br-lg' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-bl-lg'}`}>
                   <p className="text-sm">{msg.message}</p>
                 </div>
               </div>
@@ -152,14 +195,14 @@ const CommunityChat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <footer className="p-4 border-t border-slate-200">
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl p-2">
+        <footer className="p-4 border-t border-slate-200 dark:border-slate-800">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
             <button type="button" className="p-2 text-slate-500 hover:text-blue-600"><Paperclip size={20}/></button>
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder={`Message Sarah Chen`}
+              placeholder={`Message #${activeChat.name}`}
               className="flex-1 bg-transparent focus:outline-none text-sm"
             />
             <Button type="submit" size="sm" className="rounded-lg" disabled={!message.trim()}>
@@ -170,11 +213,10 @@ const CommunityChat = () => {
       </main>
 
       {/* Right Sidebar: Members Info */}
-      <aside className="w-80 bg-slate-50 border-l border-slate-200 flex-shrink-0 flex flex-col">
-        <div className="p-4 border-b border-slate-200 text-center">
-            <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100" className="w-20 h-20 rounded-full mx-auto mb-2" />
-            <h3 className="font-semibold">Sarah Chen</h3>
-            <p className="text-sm text-slate-500">Senior Frontend Developer</p>
+      <aside className={`fixed lg:relative z-40 inset-y-0 right-0 w-80 bg-slate-100 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex-shrink-0 flex flex-col transition-transform duration-300 ease-in-out ${rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0`}>
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 className="font-semibold">Members</h3>
+            <button onClick={() => setRightSidebarOpen(false)} className="lg:hidden p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white"><X size={20}/></button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
             {Object.entries(onlineMembers).map(([role, members]) => (
@@ -182,10 +224,10 @@ const CommunityChat = () => {
                     <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">{role} - {members.length}</h4>
                     <div className="space-y-2">
                         {members.map(member => (
-                            <div key={member.name} className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-200 cursor-pointer">
+                            <div key={member.name} className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">
                                 <div className="relative">
                                     <img src={member.avatar} className="w-8 h-8 rounded-full" />
-                                    <span className={`absolute bottom-0 right-0 block h-2 w-2 rounded-full border border-slate-50 ${member.status === 'online' ? 'bg-green-500' : 'bg-yellow-400'}`}></span>
+                                    <span className={`absolute bottom-0 right-0 block h-2 w-2 rounded-full border border-white dark:border-slate-800 ${member.status === 'online' ? 'bg-green-500' : 'bg-yellow-400'}`}></span>
                                 </div>
                                 <span className="text-sm font-medium">{member.name}</span>
                             </div>

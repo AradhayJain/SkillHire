@@ -87,11 +87,11 @@ const AuthPage = ({ type }) => {
   }, [type]);
 
   // Effect to redirect if user is already authenticated
-  useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+  // useEffect(() => {
+  //   if (!authLoading && isAuthenticated) {
+  //     navigate('/dashboard');
+  //   }
+  // }, [isAuthenticated, authLoading, navigate]);
 
 
   const handleSubmit = async (e) => {

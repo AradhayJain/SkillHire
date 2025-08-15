@@ -3,7 +3,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children }) => {
+const HandleLogin = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   // While the auth state is loading from localStorage,
@@ -13,12 +13,11 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // If the user is not authenticated, redirect them to the login page.
-  if (!isAuthenticated) {
-    return <Navigate to="/" />;
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" />;
   }
-
-  // If the user is authenticated, render the page they were trying to access.
+  // If the user is not authenticated, render the login page.
   return children;
 };
 
-export default ProtectedRoute;
+export default HandleLogin;

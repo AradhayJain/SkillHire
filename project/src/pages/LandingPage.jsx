@@ -113,11 +113,11 @@ const LandingPage = () => {
   const [theme, toggleTheme] = useTheme();
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
-    useEffect(() => {
-      if (!authLoading && isAuthenticated) {
-        navigate('/dashboard');
-      }
-    }, [isAuthenticated, authLoading, navigate]);
+    // useEffect(() => {
+    //   if (!authLoading && isAuthenticated) {
+    //     navigate('/dashboard');
+    //   }
+    // }, [isAuthenticated, authLoading, navigate]);
 
   const features = [
     { icon: Brain, title: 'AI Resume Parsing', description: 'Advanced AI analyzes your resume and provides intelligent insights.'},

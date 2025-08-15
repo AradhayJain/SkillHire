@@ -14,7 +14,8 @@ import {
   Menu,
   LogOut,
   Sun,
-  Moon
+  Moon,
+  UploadCloud
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -175,6 +176,23 @@ const Dashboard = () => {
   const [newResumeTitle, setNewResumeTitle] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const handleDeleteResume = (id) => setResumes(prev => prev.filter(resume => resume.id !== id));
+  
+  const handleAddResume = (e) => {
+    e.preventDefault();
+    if (!newResumeTitle.trim()) return;
+    const newId = resumes.length > 0 ? Math.max(...resumes.map(r => r.id)) + 1 : 1;
+    const newResume = {
+      id: newId,
+      title: newResumeTitle,
+      lastUpdated: 'Just now',
+      atsScore: Math.floor(Math.random() * (95 - 70 + 1) + 70),
+    };
+    setResumes(prev => [newResume, ...prev]);
+    setNewResumeTitle('');
+    setView('grid');
+  };
+
   const handleSelectResume = (resume) => {
     setSelectedResume(resume);
     setView('detail');
@@ -234,14 +252,14 @@ const Dashboard = () => {
         <div className="flex-1 relative">
             <AnimatePresence mode="wait">
               {view === 'grid' && (
-                <motion.div key="grid" variants={pageVariants} initial="initial" animate="in" exit="out" transition={pageTransition}>
+                <div key="grid" variants={pageVariants} initial="initial" animate="in" exit="out" transition={pageTransition}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {resumes.map(resume => (
-                      <ResumeCard key={resume.id} resume={resume} onSelect={handleSelectResume} onDelete={(id) => setResumes(resumes.filter(r => r.id !== id))} />
+                      <ResumeCard key={resume.id} resume={resume} onSelect={handleSelectResume} onDelete={handleDeleteResume} />
                     ))}
                   </div>
                   <button onClick={() => setView('add')} className="fixed bottom-6 right-6 w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-indigo-700 hover:scale-110 transition-all z-20" aria-label="Add New Resume"><Plus size={28} /></button>
-                </motion.div>
+                </div>
               )}
 
               {view === 'detail' && selectedResume && (
@@ -263,9 +281,29 @@ const Dashboard = () => {
 
               {view === 'add' && (
                 <motion.div key="add" variants={pageVariants} initial="initial" animate="in" exit="out" transition={pageTransition} className="max-w-3xl mx-auto">
-                  <form onSubmit={(e) => { e.preventDefault(); /* Handle add logic */ setView('grid'); }} className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-lg space-y-6">
-                    {/* ... form content ... */}
-                     <div className="flex justify-end gap-4 pt-4">
+                  <form onSubmit={handleAddResume} className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-lg space-y-6">
+                    <div>
+                      <label htmlFor="resumeTitle" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Resume Title</label>
+                      <input type="text" id="resumeTitle" value={newResumeTitle} onChange={(e) => setNewResumeTitle(e.target.value)} placeholder="e.g., Senior Software Engineer"
+                        className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Upload File</label>
+                      <div className="mt-2 flex justify-center rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 px-6 py-10">
+                        <div className="text-center">
+                          <UploadCloud className="mx-auto h-12 w-12 text-slate-400" />
+                          <div className="mt-4 flex text-sm leading-6 text-slate-600 dark:text-slate-400 justify-center">
+                            <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-semibold text-indigo-600 dark:text-indigo-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-800 hover:text-indigo-500">
+                              <span>Upload a file</span>
+                              <input id="file-upload" name="file-upload" type="file" className="sr-only" />
+                            </label>
+                            <p className="pl-1">or drag and drop</p>
+                          </div>
+                          <p className="text-xs leading-5 text-slate-500 dark:text-slate-500">PDF, DOCX up to 10MB</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-4 pt-4">
                       <button type="button" onClick={() => setView('grid')} className="px-6 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition">Cancel</button>
                       <button type="submit" className="px-6 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">Save Resume</button>
                     </div>

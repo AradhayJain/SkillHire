@@ -11,6 +11,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
 import CommunityChat from './pages/CommunityChat';
 import ProtectedRoute from './components/ProtectedRoute';
+import HandleLogin from './components/HandleLogin';
 
 function App() {
   return (
@@ -19,9 +20,12 @@ function App() {
         <div className="min-h-screen bg-gray-50 font-inter">
           <Routes>
             {/* --- Public Routes --- */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth/login" element={<AuthPage type="login" />} />
-            <Route path="/auth/signup" element={<AuthPage type="signup" />} />
+            <Route path="/" element={
+              <HandleLogin>
+                <LandingPage />
+              </HandleLogin>}/>
+            <Route path="/auth/login" element={<HandleLogin><AuthPage type="login" /></HandleLogin>} />
+            <Route path="/auth/signup" element={<HandleLogin><AuthPage type="signup" /></HandleLogin>} />
 
             {/* --- Protected Routes --- */}
             <Route 
