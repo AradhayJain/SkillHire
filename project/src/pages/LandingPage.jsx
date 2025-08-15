@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Brain, Search, Target, Users, Star, Check, ArrowRight,
   ChevronDown, MessageSquare, Mail, Phone, MapPin, Twitter, Facebook, 
   Linkedin, Plus, Sun, Moon, Upload
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 // --- Reusable Components (can be moved to their own files) ---
 const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
@@ -110,6 +111,13 @@ const AccordionItem = ({ question, answer }) => {
 // --- Reimagined Landing Page ---
 const LandingPage = () => {
   const [theme, toggleTheme] = useTheme();
+  const navigate = useNavigate();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+    useEffect(() => {
+      if (!authLoading && isAuthenticated) {
+        navigate('/dashboard');
+      }
+    }, [isAuthenticated, authLoading, navigate]);
 
   const features = [
     { icon: Brain, title: 'AI Resume Parsing', description: 'Advanced AI analyzes your resume and provides intelligent insights.'},
