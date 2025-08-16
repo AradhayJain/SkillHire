@@ -138,7 +138,7 @@ const AuthPage = ({ type }) => {
 
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
-  const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"; // <-- IMPORTANT: REPLACE THIS
+  const GOOGLE_CLIENT_ID = "675666752184-6r6c5369l793km40f299gelrmnknd928.apps.googleusercontent.com"; // <-- IMPORTANT: REPLACE THIS
 
   useEffect(() => {
     setIsLogin(type === 'login');
@@ -181,6 +181,7 @@ const AuthPage = ({ type }) => {
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
+    console.log(credentialResponse)
     setLoading(true);
     setError('');
     try {

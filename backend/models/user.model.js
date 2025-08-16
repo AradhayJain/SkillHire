@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto'; // Import the crypto library for token generation
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -16,13 +16,12 @@ const userSchema = new mongoose.Schema({
   },
   PhoneNumber:{
     type: Number,
-    required: true,
-    unique: true
-  },
-  // --- Fields for Password Reset ---
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
-
+    // FIX: Changed from 'required: true' to 'required: false'
+    // This makes the phone number optional, allowing Google Sign-In to work.
+    required: false, 
+    unique: true,
+    sparse: true // Important: Allows multiple documents to have a null value for a unique field
+  }
 }, { timestamps: true });
 
 // --- Method to compare entered password with the hashed password ---
@@ -32,7 +31,6 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // --- Middleware to hash password before saving ---
 userSchema.pre('save', async function(next) {
-    // Only hash the password if it has been modified (or is new)
     if (this.isModified('password')) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
@@ -42,19 +40,15 @@ userSchema.pre('save', async function(next) {
 
 // --- Method to generate and hash password reset token ---
 userSchema.methods.getResetPasswordToken = function() {
-    // Generate token
     const resetToken = crypto.randomBytes(20).toString('hex');
 
-    // Hash token and set to resetPasswordToken field
     this.resetPasswordToken = crypto
         .createHash('sha256')
         .update(resetToken)
         .digest('hex');
 
-    // Set expire time (e.g., 10 minutes)
-    this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+    this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    // Return the unhashed token (to be sent via email)
     return resetToken;
 };
 

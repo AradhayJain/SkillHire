@@ -398,7 +398,7 @@ const Dashboard = () => {
       <main className="flex-1 p-4 sm:p-8 flex flex-col overflow-y-auto">
         <Header
             title={
-                view === 'grid' ? `Welcome back, ${user?.name?.split(' ')[0] || 'Guest'}!` :
+                view === 'grid' ? `Welcome back, ${user?.username || 'Guest'}!` :
                 view === 'detail' ? 'Resume Details' :
                 'Add New Resume'
             }
