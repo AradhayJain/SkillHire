@@ -41,7 +41,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
     PhoneNumber,
-    pic: picUpload,
+    pic: picUpload.url,
     subscriptionType: "Free Tier", // default subscriptionType
     lastLogin: new Date() // current date
   });

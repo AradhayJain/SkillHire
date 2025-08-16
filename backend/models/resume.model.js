@@ -6,7 +6,8 @@ const resumeSchema = new mongoose.Schema({
     atsScore: Number,
     cloudinaryPath: String,
     updatesRemaining: { type: Number, default: 0 },
-    ResumeString: mongoose.Schema.Types.Mixed, // Placeholder for resume string data
+    ResumeString: mongoose.Schema.Types.Mixed,
+    ResumeTitle: { type: String, required: true },
 }, { timestamps: true });
 
 export const Resume = mongoose.model('Resume', resumeSchema);
