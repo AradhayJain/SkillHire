@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import CommunityChat from './pages/CommunityChat';
 import ProtectedRoute from './components/ProtectedRoute';
 import HandleLogin from './components/HandleLogin';
+import ResetPasswordPage from './pages/Reset';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <div className="min-h-screen bg-gray-50 font-inter">
           <Routes>
             {/* --- Public Routes --- */}
+            <Route path="/reset-password/:resettoken" element={<ResetPasswordPage />} />
             <Route path="/" element={
               <HandleLogin>
                 <LandingPage />

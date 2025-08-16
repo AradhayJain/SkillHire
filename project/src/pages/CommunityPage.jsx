@@ -1,4 +1,4 @@
-import {React, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -10,7 +10,10 @@ import {
   User,
   ArrowLeft,
   Sun,
-  Moon
+  Moon,
+  Bookmark,
+  Filter,
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -84,8 +87,10 @@ const UserProfileCard = ({ user, onConnect }) => (
 const CommunityPage = () => {
   const [activeTab, setActiveTab] = useState('resumes');
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [postSearch, setPostSearch] = useState('');
   const [peopleSearch, setPeopleSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
   const navigate = useNavigate();
   const [theme, toggleTheme] = useTheme();
 
@@ -118,45 +123,57 @@ const CommunityPage = () => {
   const handleConnect = (userId) => navigate(`/community/chat/${userId}`);
   const handleCreatePost = () => setIsPostModalOpen(false);
   
-  const TabButton = ({ label, tabName, icon: Icon }) => (
+  const TabButton = ({ label, tabName, icon: Icon, active }) => (
     <button
       onClick={() => setActiveTab(tabName)}
-      className={`relative flex-1 p-4 text-sm font-semibold transition-colors flex items-center justify-center gap-2
-        ${activeTab === tabName ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`
+      className={`relative py-2.5 px-4 text-sm font-semibold transition-colors flex items-center justify-center gap-2 rounded-full
+        ${active ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`
       }
     >
-      <Icon size={18} />
-      {label}
-      {activeTab === tabName && (
-        <motion.div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" layoutId="underline" />
-      )}
+      <Icon size={16} />
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 
+  const filters = [
+      { key: 'all', label: 'All Posts' },
+      { key: 'templates', label: 'Templates' },
+      { key: 'reviews', label: 'Reviews' },
+      { key: 'tips', label: 'Tips & Tricks' },
+  ];
+
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-      {/* New Header */}
       <header className="flex-shrink-0 bg-white dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="md" onClick={() => navigate('/dashboard')}>
-                <ArrowLeft size={16} className="mr-2" />
-                Back to Dashboard
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="md" onClick={() => navigate('/dashboard')} className="!p-2 sm:!px-3">
+                <ArrowLeft size={16} />
+                <span className="hidden sm:inline ml-2">Dashboard</span>
             </Button>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-white hidden sm:block">Community Hub</h1>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-white hidden md:block">Community Hub</h1>
           </div>
-          <button onClick={toggleTheme} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
+          
+          <div className="hidden md:flex p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full">
+              <TabButton label="Explore Posts" tabName="resumes" icon={FileText} active={activeTab === 'resumes'} />
+              <TabButton label="Explore People" tabName="people" icon={User} active={activeTab === 'people'} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={toggleTheme} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700">
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+          </div>
       </header>
 
-      {/* Top Tab Navigation */}
-      <div className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
-        <TabButton label="Explore Resumes" tabName="resumes" icon={FileText} />
-        <TabButton label="Explore People" tabName="people" icon={User} />
+      {/* Mobile Tab Navigation */}
+      <div className="md:hidden p-2 bg-white dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50 flex justify-center">
+          <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full flex">
+              <TabButton label="Posts" tabName="resumes" icon={FileText} active={activeTab === 'resumes'} />
+              <TabButton label="People" tabName="people" icon={User} active={activeTab === 'people'} />
+          </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-grow p-6 overflow-y-auto">
+      <div className="flex-grow p-4 md:p-6 overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -167,18 +184,54 @@ const CommunityPage = () => {
             className="h-full"
           >
             {activeTab === 'resumes' && (
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-full">
-                <div className="lg:col-span-3 h-full">
+              <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-8 h-full">
+                <aside className="hidden lg:block space-y-6">
+                    <Button onClick={() => setIsPostModalOpen(true)} className="w-full text-lg py-3 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30">
+                        <Plus size={20} className="mr-2" /> Create Post
+                    </Button>
+                    <Card className="p-4 dark:bg-slate-800">
+                        <h3 className="font-semibold mb-3 text-slate-800 dark:text-white">My Activity</h3>
+                        <nav className="space-y-2">
+                            <a href="#" className="flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><FileText size={16}/> My Posts</a>
+                            <a href="#" className="flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><Bookmark size={16}/> Saved Posts</a>
+                        </nav>
+                    </Card>
+                </aside>
+
+                <main className="lg:col-start-2">
+                    <div className="lg:hidden flex gap-2 mb-4">
+                        <div className="relative flex-grow">
+                            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input type="text" placeholder="Search posts..." value={postSearch} onChange={(e) => setPostSearch(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <Button variant="outline" onClick={() => setIsFilterModalOpen(true)}><Filter size={16}/></Button>
+                    </div>
                     {filteredPosts.map(post => <PostCard key={post.id} post={post} onVote={handleVote} />)}
-                </div>
-                <div className="lg:col-span-1 space-y-4">
+                </main>
+
+                <aside className="hidden lg:block space-y-6">
                     <div className="relative">
                         <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input type="text" placeholder="Search posts..." value={postSearch} onChange={(e) => setPostSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
                     </div>
-                    <Button onClick={() => setIsPostModalOpen(true)} className="w-full">
-                        <Plus size={16} className="mr-2" /> Create Post
+                     <Card className="p-4 dark:bg-slate-800">
+                        <h3 className="font-semibold mb-3 text-slate-800 dark:text-white">Filters</h3>
+                        <div className="flex flex-col items-start gap-2">
+                            {filters.map(filter => (
+                                <button key={filter.key} onClick={() => setActiveFilter(filter.key)}
+                                    className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${activeFilter === filter.key ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                                    {filter.label}
+                                </button>
+                            ))}
+                        </div>
+                    </Card>
+                </aside>
+                
+                <div className="lg:hidden fixed bottom-6 right-6 z-30">
+                    <Button onClick={() => setIsPostModalOpen(true)} className="rounded-full w-16 h-16 shadow-lg">
+                        <Plus size={28} />
                     </Button>
                 </div>
               </div>
@@ -200,7 +253,6 @@ const CommunityPage = () => {
         </AnimatePresence>
       </div>
 
-      {/* Create Post Modal */}
       <Modal isOpen={isPostModalOpen} onClose={() => setIsPostModalOpen(false)} title="Create a New Post" size="lg">
         <div className="space-y-6">
           <Input label="Title" placeholder="An engaging title for your post" required />
@@ -216,6 +268,41 @@ const CommunityPage = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Filter Modal for Mobile */}
+      <AnimatePresence>
+        {isFilterModalOpen && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsFilterModalOpen(false)}
+                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            >
+                <motion.div
+                    initial={{ y: "100%" }}
+                    animate={{ y: "0%" }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-800 p-4 rounded-t-2xl"
+                >
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-lg">Filters</h3>
+                        <button onClick={() => setIsFilterModalOpen(false)} className="p-1"><X size={20}/></button>
+                    </div>
+                    <div className="flex flex-col items-start gap-2">
+                        {filters.map(filter => (
+                            <button key={filter.key} onClick={() => { setActiveFilter(filter.key); setIsFilterModalOpen(false); }}
+                                className={`w-full text-left px-4 py-3 rounded-lg text-md transition-colors ${activeFilter === filter.key ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                                {filter.label}
+                            </button>
+                        ))}
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

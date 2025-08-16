@@ -409,7 +409,7 @@ const Dashboard = () => {
         <div className="flex-1 relative">
             <AnimatePresence mode="wait">
               {view === 'grid' && (
-                <motion.div key="grid" variants={pageVariants} initial="initial" animate="in" exit="out" transition={pageTransition}>
+                <div key="grid" variants={pageVariants} initial="initial" animate="in" exit="out" transition={pageTransition}>
                   {isLoading ? (
                     <div className="flex justify-center items-center h-64"> <Loader2 className="animate-spin text-indigo-600" size={48} /> </div>
                   ) : error ? (
@@ -422,7 +422,7 @@ const Dashboard = () => {
                     </div>
                   )}
                   <button onClick={() => setView('add')} className="fixed bottom-6 right-6 w-16 h-16 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-indigo-700 hover:scale-110 transition-all z-20" aria-label="Add New Resume"><Plus size={28} /></button>
-                </motion.div>
+                </div>
               )}
 
               {view === 'detail' && selectedResume && (
