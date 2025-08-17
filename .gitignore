@@ -3,3 +3,5 @@ node_modules
 .env
 model.safetensors
 optimizer.pt
+bert_model/
+bert_resume_ner/

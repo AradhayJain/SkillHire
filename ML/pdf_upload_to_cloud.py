@@ -28,7 +28,7 @@ def upload_pdf():
     try:
         upload_result = cloudinary.uploader.upload(
             file,
-            resource_type="raw",
+            resource_type="auto",
             folder="pdf_uploads"
         )
 
