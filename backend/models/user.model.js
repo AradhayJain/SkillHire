@@ -21,7 +21,11 @@ const userSchema = new mongoose.Schema({
     required: false, 
     unique: true,
     sparse: true // Important: Allows multiple documents to have a null value for a unique field
-  }
+  },
+  loginOtp: String,
+  loginOtpExpire: Date,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date
 }, { timestamps: true });
 
 // --- Method to compare entered password with the hashed password ---

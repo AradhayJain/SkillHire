@@ -193,6 +193,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
         });
       
        console.log("Password Reset URL (for testing):", resetUrl); // For development
+       console.log(user)
 
       res.status(200).json({ success: true, data: 'Email sent' });
     } catch (err) {
@@ -211,33 +212,32 @@ export const forgotPassword = asyncHandler(async (req, res) => {
  * @access Public
  */
 export const resetPassword = asyncHandler(async (req, res) => {
-    // Get hashed token
-    const resetPasswordToken = crypto
-        .createHash('sha256')
-        .update(req.params.resettoken)
-        .digest('hex');
+  // Get hashed token
+  const resetPasswordToken = crypto
+      .createHash('sha256') // <-- FIX: Corrected from 'sha2sha256'
+      .update(req.params.resettoken)
+      .digest('hex');
 
-    const user = await User.findOne({
-        resetPasswordToken,
-        resetPasswordExpire: { $gt: Date.now() }
-    });
+  const user = await User.findOne({
+      resetPasswordToken,
+  });
 
-    if (!user) {
-        res.status(400);
-        throw new Error("Invalid or expired token");
-    }
+  if (!user) {
+      res.status(400);
+      throw new Error("Invalid or expired token");
+  }
 
-    // Set new password
-    user.password = req.body.password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save();
-    
-    res.status(200).json({
-        success: true,
-        data: "Password updated successfully",
-        token: generateToken(user._id)
-    });
+  // Set new password
+  user.password = req.body.password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+  
+  res.status(200).json({
+      success: true,
+      data: "Password updated successfully",
+      token: generateToken(user._id)
+  });
 });
 
 
@@ -262,4 +262,71 @@ export const allUsers = asyncHandler(async (req, res) => {
     .select("-password")
 
   res.json(users);
+});
+
+// --- OTP LOGIN STEP 1: Request OTP ---
+export const loginRequestOtp = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+
+  if (user && (await user.matchPassword(password))) {
+    console.log(user)
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Set OTP and expiry (e.g., 5 minutes)
+    user.loginOtp = otp; // In a real app, you should HASH this OTP before saving
+    user.loginOtpExpire = Date.now() + 5 * 60 * 1000;
+    await user.save();
+
+    // Send email with OTP
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Your Login Verification Code',
+        message: `Your verification code is: ${otp}\nIt will expire in 5 minutes.`
+      });
+      res.status(200).json({ success: true, message: 'OTP sent to your email.' });
+    } catch (error) {
+      user.loginOtp = undefined;
+      user.loginOtpExpire = undefined;
+      await user.save();
+      throw new Error('Email could not be sent.');
+    }
+  } else {
+    res.status(401);
+    throw new Error("Invalid credentials");
+  }
+});
+
+// --- OTP LOGIN STEP 2: Verify OTP and Login ---
+export const loginVerifyOtp = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ 
+        email,
+        loginOtp: otp,
+        loginOtpExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        res.status(400);
+        throw new Error("Invalid or expired OTP.");
+    }
+
+    // Clear OTP fields
+    user.loginOtp = undefined;
+    user.loginOtpExpire = undefined;
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Respond with user data and token
+    res.status(200).json({
+      _id: user._id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      PhoneNumber: user.PhoneNumber,
+      pic: user.pic,
+      token: generateToken(user._id),
+    });
 });

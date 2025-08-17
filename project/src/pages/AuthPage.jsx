@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Briefcase, UploadCloud, UserPlus, LogIn, Star, Mail } from 'lucide-react';
+import { Eye, EyeOff, Briefcase, UploadCloud, UserPlus, LogIn, Star, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
@@ -67,6 +67,62 @@ const FileInput = ({ label, name, onChange }) => {
     );
 };
 
+// --- OTP Verification Modal ---
+const OtpModal = ({ email, onClose, onVerifySuccess }) => {
+    const [otp, setOtp] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        try {
+            const res = await fetch('http://localhost:3000/api/user/login-verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp })
+            });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Invalid OTP.');
+            }
+            const data = await res.json();
+            onVerifySuccess(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+                <form onSubmit={handleSubmit}>
+                    <div className="p-6 text-center">
+                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <ShieldCheck className="text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <h2 className="text-xl font-bold">Check your email</h2>
+                        <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">We've sent a 6-digit code to {email}. The code expires shortly, so please enter it soon.</p>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                        <Input label="One-Time Password" type="text" name="otp" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter 6-digit code" required />
+                    </div>
+                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+                        <Button type="submit" loading={loading}>Verify & Login</Button>
+                    </div>
+                </form>
+            </motion.div>
+        </motion.div>
+    );
+};
+
 // --- Forgot Password Modal ---
 const ForgotPasswordModal = ({ onClose, onLinkSent }) => {
     const [email, setEmail] = useState('');
@@ -78,7 +134,6 @@ const ForgotPasswordModal = ({ onClose, onLinkSent }) => {
         setLoading(true);
         setError('');
         try {
-            // API call to your backend to handle the password reset email
             const res = await fetch('http://localhost:3000/api/user/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -123,9 +178,9 @@ const ForgotPasswordModal = ({ onClose, onLinkSent }) => {
     );
 };
 
-
 // --- Main Auth Page ---
 const AuthPage = ({ type }) => {
+  const [authStep, setAuthStep] = useState('credentials');
   const [isLogin, setIsLogin] = useState(type === 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -138,11 +193,12 @@ const AuthPage = ({ type }) => {
 
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
-  const GOOGLE_CLIENT_ID = "675666752184-6r6c5369l793km40f299gelrmnknd928.apps.googleusercontent.com"; // <-- IMPORTANT: REPLACE THIS
+  const GOOGLE_CLIENT_ID = "675666752184-6r6c5369l793km40f299gelrmnknd928.apps.googleusercontent.com";
 
   useEffect(() => {
     setIsLogin(type === 'login');
     setError('');
+    setAuthStep('credentials');
     setFormData({ username: '', name: '', email: '', password: '', confirmPassword: '', PhoneNumber: '', pic: null });
   }, [type]);
 
@@ -156,15 +212,13 @@ const AuthPage = ({ type }) => {
     setLoading(true);
     try {
       if (isLogin) {
-        const res = await fetch('http://localhost:3000/api/user/login', {
+        const res = await fetch('http://localhost:3000/api/user/login-request-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, password: formData.password })
         });
         if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
-        const data = await res.json();
-        login(data);
-        navigate('/dashboard');
+        setAuthStep('otp');
       } else {
         if (formData.password !== formData.confirmPassword) throw new Error('Passwords do not match');
         const data = new FormData();
@@ -180,28 +234,28 @@ const AuthPage = ({ type }) => {
     }
   };
 
+  const handleOtpSuccess = (data) => {
+      login(data);
+      navigate('/dashboard');
+  };
+
   const handleGoogleSuccess = async (credentialResponse) => {
-    console.log(credentialResponse)
     setLoading(true);
     setError('');
     try {
         const token = credentialResponse.credential;
-        
         const res = await fetch('http://localhost:3000/api/user/google-auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token })
         });
-
         if (!res.ok) {
             const errData = await res.json();
             throw new Error(errData.message || 'Google Sign-In failed.');
         }
-
         const data = await res.json();
         login(data);
         navigate('/dashboard');
-
     } catch (err) {
         setError(err.message);
     } finally {
@@ -281,7 +335,7 @@ const AuthPage = ({ type }) => {
                   </Input>
                   {!isLogin && <Input label="Confirm Password" type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} placeholder="••••••••" required />}
                   {isLogin && <div className="text-right"><button type="button" onClick={() => { setIsForgotModalOpen(true); setResetLinkSent(false); }} className="text-sm text-blue-600 hover:underline">Forgot password?</button></div>}
-                  <Button type="submit" loading={loading} className="w-full" size="lg">{isLogin ? 'Sign In' : 'Create Account'}</Button>
+                  <Button type="submit" loading={loading} className="w-full" size="lg">{isLogin ? 'Continue' : 'Create Account'}</Button>
                   <div className="relative my-4"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-300 dark:border-slate-700" /></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-slate-50 dark:bg-slate-900 text-slate-500">Or</span></div></div>
                   
                   <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google login failed. Please try again.')} useOneTap />
@@ -340,6 +394,7 @@ const AuthPage = ({ type }) => {
       </div>
       <AnimatePresence>
         {isForgotModalOpen && <ForgotPasswordModal onClose={() => setIsForgotModalOpen(false)} onLinkSent={() => { setIsForgotModalOpen(false); setResetLinkSent(true); }} />}
+        {authStep === 'otp' && isLogin && <OtpModal email={formData.email} onClose={() => setAuthStep('credentials')} onVerifySuccess={handleOtpSuccess} />}
       </AnimatePresence>
     </GoogleOAuthProvider>
   );
