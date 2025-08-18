@@ -22,8 +22,8 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true // Important: Allows multiple documents to have a null value for a unique field
   },
-  loginOtp: String,
-  loginOtpExpire: Date,
+  verificationOtp: String,
+  verificationOtpExpire: Date,
   resetPasswordToken: String,
   resetPasswordExpires: Date
 }, { timestamps: true });

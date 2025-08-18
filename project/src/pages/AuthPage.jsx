@@ -20,7 +20,7 @@ const Button = ({ children, variant = 'primary', size = 'md', className = '', lo
   );
 };
 
-const Input = ({ label, type, name, value, onChange, placeholder, required, children }) => (
+const Input = ({ label, type, name, value, onChange, placeholder, required, children, error }) => (
   <div>
     <label htmlFor={name} className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{label}</label>
     <div className="relative">
@@ -32,10 +32,11 @@ const Input = ({ label, type, name, value, onChange, placeholder, required, chil
         onChange={onChange}
         placeholder={placeholder}
         required={required}
-        className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+        className={`w-full px-4 py-2.5 border rounded-lg bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:border-blue-500 transition ${error ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'}`}
       />
       {children}
     </div>
+    {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
   </div>
 );
 
@@ -67,7 +68,7 @@ const FileInput = ({ label, name, onChange }) => {
     );
 };
 
-// --- OTP Verification Modal ---
+// --- OTP Verification Modal for Registration ---
 const OtpModal = ({ email, onClose, onVerifySuccess }) => {
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
@@ -78,7 +79,7 @@ const OtpModal = ({ email, onClose, onVerifySuccess }) => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://localhost:3000/api/user/login-verify-otp', {
+            const res = await fetch('http://localhost:3000/api/user/register-verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp })
@@ -87,8 +88,7 @@ const OtpModal = ({ email, onClose, onVerifySuccess }) => {
                 const errData = await res.json();
                 throw new Error(errData.message || 'Invalid OTP.');
             }
-            const data = await res.json();
-            onVerifySuccess(data);
+            onVerifySuccess();
         } catch (err) {
             setError(err.message);
         } finally {
@@ -106,16 +106,16 @@ const OtpModal = ({ email, onClose, onVerifySuccess }) => {
                         <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ShieldCheck className="text-blue-600 dark:text-blue-400" />
                         </div>
-                        <h2 className="text-xl font-bold">Check your email</h2>
-                        <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">We've sent a 6-digit code to {email}. The code expires shortly, so please enter it soon.</p>
+                        <h2 className="text-xl font-bold">Verify your email</h2>
+                        <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">We've sent a 6-digit code to {email}. Please enter it to complete your registration.</p>
                     </div>
                     <div className="p-6 space-y-4">
                         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                        <Input label="One-Time Password" type="text" name="otp" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter 6-digit code" required />
+                        <Input label="Verification Code" type="text" name="otp" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter 6-digit code" required />
                     </div>
                     <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
                         <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
-                        <Button type="submit" loading={loading}>Verify & Login</Button>
+                        <Button type="submit" loading={loading}>Verify & Register</Button>
                     </div>
                 </form>
             </motion.div>
@@ -187,6 +187,7 @@ const AuthPage = ({ type }) => {
   const [error, setError] = useState('');
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [resetLinkSent, setResetLinkSent] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
     username: '', name: '', email: '', password: '', confirmPassword: '', PhoneNumber: '', pic: null
   });
@@ -199,33 +200,62 @@ const AuthPage = ({ type }) => {
     setIsLogin(type === 'login');
     setError('');
     setAuthStep('credentials');
+    setFormErrors({});
     setFormData({ username: '', name: '', email: '', password: '', confirmPassword: '', PhoneNumber: '', pic: null });
   }, [type]);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) navigate('/dashboard');
   }, [isAuthenticated, authLoading, navigate]);
+  
+  const validateField = (name, value) => {
+      let error = '';
+      if (name === 'email' && !EMAIL_REGEX.test(value)) {
+          error = 'Please enter a valid email address.';
+      }
+      if (name === 'password' && !isLogin && !PASSWORD_REGEX.test(value)) {
+          error = 'Password must be 8+ characters with uppercase, lowercase, and a number.';
+      }
+      if (name === 'confirmPassword' && !isLogin && value !== formData.password) {
+          error = 'Passwords do not match.';
+      }
+      setFormErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData(prev => ({ ...prev, [name]: files ? files[0] : value }));
+    validateField(name, value);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    if (Object.values(formErrors).some(err => err)) return;
+
     setLoading(true);
     try {
       if (isLogin) {
-        const res = await fetch('http://localhost:3000/api/user/login-request-otp', {
+        // --- Standard LOGIN LOGIC ---
+        const res = await fetch('http://localhost:3000/api/user/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, password: formData.password })
         });
         if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
-        setAuthStep('otp');
+        const data = await res.json();
+        login(data);
+        navigate('/dashboard');
       } else {
-        if (formData.password !== formData.confirmPassword) throw new Error('Passwords do not match');
+        // --- REGISTRATION STEP 1: Request OTP ---
         const data = new FormData();
         Object.keys(formData).forEach(key => data.append(key, formData[key]));
-        const res = await fetch('http://localhost:3000/api/user/register', { method: 'POST', body: data });
+        
+        const res = await fetch('http://localhost:3000/api/user/register-request-otp', { method: 'POST', body: data });
         if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
-        navigate('/auth/login');
+        
+        setAuthStep('otp');
       }
     } catch (err) {
       setError(err.message);
@@ -234,11 +264,10 @@ const AuthPage = ({ type }) => {
     }
   };
 
-  const handleOtpSuccess = (data) => {
-      login(data);
-      navigate('/dashboard');
+  const handleOtpSuccess = () => {
+      navigate('/auth/login');
   };
-
+  
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     setError('');
@@ -263,11 +292,6 @@ const AuthPage = ({ type }) => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, files } = e.target;
-    setFormData(prev => ({ ...prev, [name]: files ? files[0] : value }));
-  };
-
   const toggleAuthMode = () => {
     if (isLogin) navigate("/auth/signup");
     else navigate("/auth/login");
@@ -278,7 +302,7 @@ const AuthPage = ({ type }) => {
     visible: { opacity: 1, x: 0, transition: { type: 'spring', damping: 15, stiffness: 100 } },
     exit: { opacity: 0, x: isLogin ? 50 : -50, transition: { duration: 0.2 } }
   };
-  
+
   const promoSlides = [
     { type: 'welcome', image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800', title: 'Join thousands of successful professionals', text: 'Our platform has helped over 50,000+ job seekers land their dream careers.' },
     { type: 'testimonial', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', name: 'Sarah L.', role: 'UX Designer', quote: 'SkillHire\'s AI feedback was a game-changer for my resume!' },
@@ -317,7 +341,7 @@ const AuthPage = ({ type }) => {
 
                 {error && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-6 text-sm text-center">{error}</motion.div>}
                 {resetLinkSent && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-3 rounded-lg mb-6 text-sm text-center">Password reset link sent to your email!</motion.div>}
-
+                
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {!isLogin && (
                     <>
@@ -329,13 +353,20 @@ const AuthPage = ({ type }) => {
                       <FileInput label="Profile Picture" name="pic" onChange={handleInputChange} />
                     </>
                   )}
-                  <Input label="Email Address" type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="you@example.com" required />
-                  <Input label="Password" type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange} placeholder="••••••••" required>
+                  <Input label="Email Address" type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="you@example.com" required error={formErrors.email} />
+                  <Input label="Password" type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange} placeholder="••••••••" required error={formErrors.password}>
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </Input>
-                  {!isLogin && <Input label="Confirm Password" type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} placeholder="••••••••" required />}
-                  {isLogin && <div className="text-right"><button type="button" onClick={() => { setIsForgotModalOpen(true); setResetLinkSent(false); }} className="text-sm text-blue-600 hover:underline">Forgot password?</button></div>}
-                  <Button type="submit" loading={loading} className="w-full" size="lg">{isLogin ? 'Continue' : 'Create Account'}</Button>
+                  {!isLogin && <Input label="Confirm Password" type={showPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} placeholder="••••••••" required error={formErrors.confirmPassword} />}
+                  
+                  {isLogin && (
+                    <div className="text-right">
+                        <button type="button" onClick={() => { setIsForgotModalOpen(true); setResetLinkSent(false); }} className="text-sm font-semibold text-blue-600 hover:underline">Forgot password?</button>
+                    </div>
+                  )}
+
+                  <Button type="submit" loading={loading} className="w-full" size="lg">{isLogin ? 'Sign In' : 'Continue'}</Button>
+                  
                   <div className="relative my-4"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-300 dark:border-slate-700" /></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-slate-50 dark:bg-slate-900 text-slate-500">Or</span></div></div>
                   
                   <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google login failed. Please try again.')} useOneTap />
@@ -394,7 +425,7 @@ const AuthPage = ({ type }) => {
       </div>
       <AnimatePresence>
         {isForgotModalOpen && <ForgotPasswordModal onClose={() => setIsForgotModalOpen(false)} onLinkSent={() => { setIsForgotModalOpen(false); setResetLinkSent(true); }} />}
-        {authStep === 'otp' && isLogin && <OtpModal email={formData.email} onClose={() => setAuthStep('credentials')} onVerifySuccess={handleOtpSuccess} />}
+        {authStep === 'otp' && !isLogin && <OtpModal email={formData.email} onClose={() => setAuthStep('credentials')} onVerifySuccess={handleOtpSuccess} />}
       </AnimatePresence>
     </GoogleOAuthProvider>
   );

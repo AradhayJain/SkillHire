@@ -4,7 +4,7 @@ import uploadOnCloudinary, { deleteFromCloudinary } from "../utils/cloudinary.js
 import axios from "axios";
 import mongoose from "mongoose";
 
-// --- CREATE: Upload a new resume ---
+// --- CREATE: Upload a new resume and perform initial analysis ---
 export const uploadResume = asyncHandler(async (req, res) => {
     const { title } = req.body;
     const userId = req.user?._id;
@@ -25,20 +25,42 @@ export const uploadResume = asyncHandler(async (req, res) => {
         throw new Error("Failed to upload resume to Cloudinary");
     }
 
+    // --- Perform full analysis on initial upload using the single endpoint ---
+    let analyticsData = {};
+    let atsScore = 0;
+    try {
+        // Call the single Flask service endpoint
+        const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_details", { 
+            pdf_url: cloudinaryUpload.url 
+        });
+
+        // Extract data from the new unified response structure
+        analyticsData = flaskResponse.data || {}; // Save the entire response as analytics
+        atsScore = flaskResponse.data?.ats_result?.ats_score || 0; // Safely access the ATS score
+        console.log("Flask service response:", flaskResponse.data);
+        
+        console.log("Initial Analysis Complete:", { analyticsData, atsScore });
+
+    } catch (error) {
+        console.error("Error calling Flask service during upload:", error.message);
+        // Proceeding with default values, but you could throw an error here.
+    }
+
     const newResumeData = {
         userId,
         ResumeTitle: title,
-        cloudinaryPath: cloudinaryUpload.url, // Correctly access the URL
-        atsScore: 0,
-        analyticsData: {},
-        updatesRemaining: 0,
-        ResumeString: {}
+        cloudinaryPath: cloudinaryUpload.url,
+        atsScore, 
+        analyticsData, 
+        updatesRemaining: 0, 
+        ResumeString: analyticsData.extracted_text || "", 
+        ResumeCategory:analyticsData.predicted_label
     };
 
     const resume = await Resume.create(newResumeData);
 
     res.status(201).json({
-        message: "Resume uploaded successfully",
+        message: "Resume uploaded and analyzed successfully",
         success: true,
         resume,
     });
@@ -89,10 +111,26 @@ export const updateResume = asyncHandler(async (req, res) => {
             throw new Error("Failed to upload the new resume file.");
         }
         
-        resume.cloudinaryPath = newUpload.url; // Correctly access the URL
+        resume.cloudinaryPath = newUpload.url;
         
-        resume.atsScore = 0;
-        resume.analyticsData = {};
+        // --- Re-run full analysis when a new file is uploaded ---
+        try {
+            const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_one", { 
+                pdf_url: newUpload.url 
+            });
+            
+            resume.analyticsData = flaskResponse.data;
+            resume.atsScore = flaskResponse.data?.ats_result?.ats_score || 0;
+            resume.ResumeString = flaskResponse.data.extracted_text || resume.ResumeString;
+            resume.ResumeCategory = flaskResponse.data.predicted_label || resume.ResumeCategory;
+            console.log("Resume updated with new file and analysis:", {
+                analyticsData: resume.analyticsData,
+                atsScore: resume.atsScore
+            });
+
+        } catch (error) {
+            console.error("Error calling Flask services during update:", error.message);
+        }
 
         if (oldPath) {
             try {
@@ -109,6 +147,14 @@ export const updateResume = asyncHandler(async (req, res) => {
     }
 
     const updatedResume = await resume.save();
+    console.log("Resume updated:",{
+        id: updatedResume.id,
+        title: updatedResume.ResumeTitle,
+        cloudinaryPath: updatedResume.cloudinaryPath,
+        analyticsData: updatedResume.analyticsData,
+        atsScore: updatedResume.atsScore,
+        ResumeCategory: updatedResume.ResumeCategory
+    })
 
     res.status(200).json({
         message: "Resume updated successfully",
@@ -153,8 +199,8 @@ export const deleteResume = asyncHandler(async (req, res) => {
     });
 });
 
-// --- UPDATE: Update ATS score by calling external service ---
-export const updateAtsScore = asyncHandler(async (req, res) => {
+// --- GET: Get ATS score from the database ---
+export const getAtsScore = asyncHandler(async (req, res) => {
     const { resumeId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(resumeId)) {
@@ -162,7 +208,7 @@ export const updateAtsScore = asyncHandler(async (req, res) => {
         throw new Error("Invalid Resume ID format");
     }
 
-    const resume = await Resume.findById(resumeId);
+    const resume = await Resume.findById(resumeId).select('atsScore ResumeTitle');
     if (!resume) {
         res.status(404);
         throw new Error("Resume not found");
@@ -170,43 +216,24 @@ export const updateAtsScore = asyncHandler(async (req, res) => {
 
     if (resume.userId.toString() !== req.user._id.toString()) {
         res.status(403);
-        throw new Error("You are not authorized to perform this action");
+        throw new Error("You are not authorized to view this data");
     }
 
-    if (!resume.cloudinaryPath) {
-        res.status(400);
-        throw new Error("Resume does not have a valid file path to analyze");
-    }
-
-    try {
-        const flaskResponse = await axios.post("http://127.0.0.1:5000/calculate_ats", {
-            pdf_url: resume.cloudinaryPath
-        });
-
-        const atsScore = flaskResponse.data.ats_score;
-
-        const updatedResume = await Resume.findByIdAndUpdate(
-            resumeId,
-            { atsScore },
-            { new: true }
-        );
-
-        res.status(200).json({
-            message: "ATS score updated successfully",
-            success: true,
-            resume: updatedResume,
-        });
-
-    } catch (error) {
-        console.error("Error calling ATS service:", error.message);
-        res.status(500);
-        throw new Error("Error updating ATS score. The analysis service may be down.");
-    }
+    res.status(200).json({
+        message: "ATS score fetched successfully",
+        success: true,
+        resume: {
+            _id: resume._id,
+            ResumeTitle: resume.ResumeTitle,
+            ResumeCategory: resume.ResumeCategory,
+            atsScore: resume.atsScore
+        },
+    });
 });
 
 
-// --- UPDATE: Update analytics data by calling external service ---
-export const updateAnalyticsData = asyncHandler(async (req, res) => {
+// --- GET: Get analytics data from the database ---
+export const getAnalyticsData = asyncHandler(async (req, res) => {
     const { resumeId } = req.params;
 
      if (!mongoose.Types.ObjectId.isValid(resumeId)) {
@@ -214,7 +241,7 @@ export const updateAnalyticsData = asyncHandler(async (req, res) => {
         throw new Error("Invalid Resume ID format");
     }
 
-    const resume = await Resume.findById(resumeId);
+    const resume = await Resume.findById(resumeId).select('analyticsData ResumeTitle');
     if (!resume) {
         res.status(404);
         throw new Error("Resume not found");
@@ -222,36 +249,17 @@ export const updateAnalyticsData = asyncHandler(async (req, res) => {
 
     if (resume.userId.toString() !== req.user._id.toString()) {
         res.status(403);
-        throw new Error("You are not authorized to perform this action");
+        throw new Error("You are not authorized to view this data");
     }
     
-    if (!resume.cloudinaryPath) {
-        res.status(400);
-        throw new Error("Resume does not have a valid file path to analyze");
-    }
-
-    try {
-        const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_details", {
-            pdf_url: resume.cloudinaryPath
-        });
-
-        const analyticsData = flaskResponse.data;
-
-        const updatedResume = await Resume.findByIdAndUpdate(
-            resumeId,
-            { analyticsData },
-            { new: true }
-        );
-
-        res.status(200).json({
-            message: "Analytics data updated successfully",
-            success: true,
-            resume: updatedResume,
-        });
-
-    } catch (error) {
-        console.error("Error calling analytics service:", error.message);
-        res.status(500);
-        throw new Error("Error updating analytics data. The analysis service may be down.");
-    }
+    res.status(200).json({
+        message: "Analytics data fetched successfully",
+        success: true,
+        resume: {
+            _id: resume._id,
+            ResumeTitle: resume.ResumeTitle,
+            ResumeCategory: resume.ResumeCategory,
+            analyticsData: resume.analyticsData
+        },
+    });
 });

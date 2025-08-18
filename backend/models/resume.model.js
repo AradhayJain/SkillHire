@@ -8,6 +8,7 @@ const resumeSchema = new mongoose.Schema({
     updatesRemaining: { type: Number, default: 0 },
     ResumeString: mongoose.Schema.Types.Mixed,
     ResumeTitle: { type: String, required: true },
+    ResumeCategory: { type: String, default: "General" },
 }, { timestamps: true });
 
 export const Resume = mongoose.model('Resume', resumeSchema);

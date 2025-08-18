@@ -5,3 +5,8 @@ model.safetensors
 optimizer.pt
 bert_model/
 bert_resume_ner/
+bert_model-20250818T050535Z-1-001.zip
+bert_model-20250818T050535Z-1-002.zip
+bert_model-20250818T050535Z-1-003.zip
+bert_resume_ner-20250818T051448Z-1-001.zip
+bert_resume_ner-20250818T051448Z-1-002.zip

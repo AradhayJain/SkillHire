@@ -265,68 +265,73 @@ export const allUsers = asyncHandler(async (req, res) => {
 });
 
 // --- OTP LOGIN STEP 1: Request OTP ---
-export const loginRequestOtp = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
+export const registerRequestOtp = asyncHandler(async (req, res) => {
+  const { username, name, email, password, PhoneNumber } = req.body;
 
-  if (user && (await user.matchPassword(password))) {
-    console.log(user)
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Set OTP and expiry (e.g., 5 minutes)
-    user.loginOtp = otp; // In a real app, you should HASH this OTP before saving
-    user.loginOtpExpire = Date.now() + 5 * 60 * 1000;
-    await user.save();
+  // Basic validation
+  if (!name || !email || !password) {
+      res.status(400);
+      throw new Error("Please fill all required fields");
+  }
 
-    // Send email with OTP
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Your Login Verification Code',
-        message: `Your verification code is: ${otp}\nIt will expire in 5 minutes.`
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+ 
+      const user = new User({
+          username, name, email, password, PhoneNumber,
+          verificationOtp: otp, // In production, you should HASH this OTP before saving
+          verificationOtpExpire: Date.now() + 10 * 60 * 1000,
       });
-      res.status(200).json({ success: true, message: 'OTP sent to your email.' });
-    } catch (error) {
-      user.loginOtp = undefined;
-      user.loginOtpExpire = undefined;
-      await user.save();
-      throw new Error('Email could not be sent.');
-    }
-  } else {
-    res.status(401);
-    throw new Error("Invalid credentials");
+  
+  if (req.file && req.file.path) {
+      const picUpload = await uploadOnCloudinary(req.file.path);
+      if (picUpload && picUpload.url) {
+          user.pic = picUpload.url;
+      }
+  }
+  
+  await user.save();
+  console.log(user)
+
+  // Send OTP email
+  try {
+      await sendEmail({
+          email: user.email,
+          subject: 'Verify Your Email for SkillHire',
+          message: `Your verification code is: ${otp}\nIt will expire in 10 minutes.`
+      });
+      res.status(200).json({ success: true, message: 'Verification OTP sent to your email.' });
+  } catch (error) {
+      // Clean up user if email fails to send, so they can try again
+      await User.deleteOne({ _id: user._id });
+      throw new Error('Email could not be sent. Please try again.');
   }
 });
 
-// --- OTP LOGIN STEP 2: Verify OTP and Login ---
-export const loginVerifyOtp = asyncHandler(async (req, res) => {
-    const { email, otp } = req.body;
-    const user = await User.findOne({ 
-        email,
-        loginOtp: otp,
-        loginOtpExpire: { $gt: Date.now() }
-    });
+// --- REGISTRATION STEP 2: Verify OTP and finalize registration ---
+export const registerVerifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
 
-    if (!user) {
-        res.status(400);
-        throw new Error("Invalid or expired OTP.");
-    }
+  const user = await User.findOne({
+      email,
+      verificationOtp: otp,
+      verificationOtpExpire: { $gt: Date.now() }
+  });
 
-    // Clear OTP fields
-    user.loginOtp = undefined;
-    user.loginOtpExpire = undefined;
-    user.lastLogin = new Date();
-    await user.save();
+  if (!user) {
+      res.status(400);
+      throw new Error("Invalid or expired OTP. Please try registering again.");
+  }
 
-    // Respond with user data and token
-    res.status(200).json({
-      _id: user._id,
-      username: user.username,
-      name: user.name,
-      email: user.email,
-      PhoneNumber: user.PhoneNumber,
-      pic: user.pic,
-      token: generateToken(user._id),
-    });
+  user.verificationOtp = undefined;
+  user.verificationOtpExpire = undefined;
+  await user.save();
+
+  res.status(201).json({
+      success: true,
+      message: "Account verified successfully! Please log in."
+  });
 });
+

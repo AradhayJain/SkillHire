@@ -2,8 +2,8 @@ import express from "express"
 import {
     uploadResume,
     updateResume,
-    updateAtsScore,
-    updateAnalyticsData,
+    getAtsScore,
+    getAnalyticsData,
     getResumes,
     deleteResume
 } from "../controllers/resume.controller.js";
@@ -14,8 +14,8 @@ const router = express.Router();
 
 router.post("/upload",protect, upload.single("resume"), uploadResume);
 router.put("/:resumeId", protect,upload.single("resume"), updateResume);
-router.put("/:resumeId/ats-score", protect, updateAtsScore);
-router.put("/:resumeId/analytics", protect, updateAnalyticsData);
+router.put("/:resumeId/ats-score", protect, getAtsScore);
+router.put("/:resumeId/analytics", protect, getAnalyticsData);
 router.get("/", protect, getResumes);
 router.delete("/:resumeId", protect, deleteResume);
 
