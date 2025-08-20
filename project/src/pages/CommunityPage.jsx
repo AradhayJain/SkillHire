@@ -13,7 +13,10 @@ import {
   Moon,
   Bookmark,
   Filter,
-  X
+  X,
+  Loader2,
+  Paperclip,
+  Target
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -21,6 +24,13 @@ import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import Badge from '../components/ui/Badge';
 import Input from '../components/ui/Input';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+
+// --- API Configuration ---
+const api = axios.create({
+  baseURL: 'http://localhost:3000/api',
+});
 
 // --- Custom Hook for Theme Management ---
 const useTheme = () => {
@@ -44,39 +54,85 @@ const useTheme = () => {
   return [theme, toggleTheme];
 };
 
+// --- Helper Function to get Cloudinary Thumbnail ---
+const getThumbnailUrl = (cloudinaryPath) => {
+  if (!cloudinaryPath || !cloudinaryPath.includes('cloudinary.com')) {
+    return null;
+  }
+  return cloudinaryPath.replace(/\.(pdf|docx|doc)$/i, '.jpg').replace('/upload/', '/upload/w_400,pg_1,f_auto,q_auto/');
+};
+
+
 // --- Reusable Components ---
-const PostCard = ({ post, onVote }) => (
-  <Card className="flex gap-4 p-4 mb-4 dark:bg-slate-800">
-    <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-700/50 p-2 rounded-lg">
-      <button onClick={() => onVote(post.id, 'up')} className={`p-1 rounded ${post.userVote === 'up' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-        <ArrowUp size={18} />
-      </button>
-      <span className="text-sm font-bold my-1 text-slate-800 dark:text-slate-200">{post.votes}</span>
-      <button onClick={() => onVote(post.id, 'down')} className={`p-1 rounded ${post.userVote === 'down' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-        <ArrowDown size={18} />
-      </button>
-    </div>
-    <div className="flex-1">
-      <div className="flex items-center space-x-3 mb-2">
-        <img src={post.avatar} alt={post.author} className="w-8 h-8 rounded-full object-cover"/>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Posted by <span className="font-medium text-slate-700 dark:text-slate-300">{post.author}</span> • {post.postedAt}</p>
-      </div>
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 hover:text-blue-600 cursor-pointer">{post.title}</h2>
-      <p className="text-slate-600 dark:text-slate-300 text-sm mb-3">{post.content}</p>
-      <div className="flex flex-wrap gap-2">
-        {post.tags.map((tag) => <Badge key={tag} variant="outline" size="sm">{tag}</Badge>)}
-      </div>
-    </div>
-  </Card>
-);
+const PostCard = ({ post, onVote, onSave }) => {
+    const thumbnailUrl = post.resumeId ? getThumbnailUrl(post.resumeId.cloudinaryPath) : null;
+    const [isSaved, setIsSaved] = useState(false); // Local state for immediate UI feedback
+
+    const handleSaveClick = (e) => {
+        e.stopPropagation(); // Prevent any parent link clicks
+        setIsSaved(!isSaved);
+        onSave(post._id);
+    };
+
+    return (
+      <Card className="flex gap-4 p-4 mb-4 dark:bg-slate-800">
+        <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-700/50 p-2 rounded-lg flex-shrink-0">
+          <button onClick={() => onVote(post._id, 'up')} className={`p-1 rounded ${post.userVote === 'up' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+            <ArrowUp size={18} />
+          </button>
+          <span className="text-sm font-bold my-1 text-slate-800 dark:text-slate-200">{post.likes?.length || 0}</span>
+          <button onClick={() => onVote(post._id, 'down')} className={`p-1 rounded ${post.userVote === 'down' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+            <ArrowDown size={18} />
+          </button>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center space-x-3">
+                <img src={post.userId?.pic} alt={post.userId?.name} className="w-8 h-8 rounded-full object-cover"/>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Posted by <span className="font-medium text-slate-700 dark:text-slate-300">{post.userId?.name}</span> • {new Date(post.createdAt).toLocaleDateString()}</p>
+            </div>
+            <button onClick={handleSaveClick} className={`p-2 rounded-full transition-colors ${isSaved ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                <Bookmark size={16} className={isSaved ? 'fill-current' : ''} />
+            </button>
+          </div>
+          
+          <p className="text-slate-600 dark:text-slate-300 text-sm mb-3">{post.description}</p>
+          
+          {post.image && <img src={post.image} alt="Post content" className="rounded-lg border dark:border-slate-700 max-h-72 w-auto my-2" />}
+          
+          {post.resumeId && (
+            <a href={post.resumeId.cloudinaryPath} target="_blank" rel="noopener noreferrer" className="my-2 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg flex items-center gap-4 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <div className="w-16 h-20 bg-slate-200 dark:bg-slate-600 rounded-md flex-shrink-0 overflow-hidden">
+                    {thumbnailUrl ? (
+                        <img src={thumbnailUrl} alt="Resume preview" className="w-full h-full object-cover object-top" />
+                    ) : (
+                        <FileText className="w-full h-full text-slate-400 p-4" />
+                    )}
+                </div>
+                <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{post.resumeId.ResumeTitle}</p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+                        <Target size={14} />
+                        <span>{post.resumeId.atsScore}% ATS Score</span>
+                    </div>
+                </div>
+            </a>
+          )}
+
+          <div className="flex flex-wrap gap-2 mt-3">
+            {post.tags.map((tag) => <Badge key={tag} variant="outline" size="sm">{tag}</Badge>)}
+          </div>
+        </div>
+      </Card>
+    );
+};
 
 const UserProfileCard = ({ user, onConnect }) => (
     <Card className="p-5 text-center transition-all hover:shadow-xl hover:-translate-y-1 dark:bg-slate-800">
-        <img src={user.avatar} alt={user.name} className="w-24 h-24 rounded-full object-cover mb-4 mx-auto border-4 border-white dark:border-slate-700 shadow-lg"/>
+        <img src={user.pic} alt={user.name} className="w-24 h-24 rounded-full object-cover mb-4 mx-auto border-4 border-white dark:border-slate-700 shadow-lg"/>
         <h3 className="font-bold text-lg text-slate-800 dark:text-white">{user.name}</h3>
-        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">{user.role}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{user.company}</p>
-        <Button variant="outline" className="w-full" onClick={() => onConnect(user.id)}>
+        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">{user.Role}</p>
+        <Button variant="outline" className="w-full mt-4" onClick={() => onConnect(user._id)}>
             <MessageSquare size={16} className="mr-2"/>
             Connect
         </Button>
@@ -90,38 +146,107 @@ const CommunityPage = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [postSearch, setPostSearch] = useState('');
   const [peopleSearch, setPeopleSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [filters, setFilters] = useState({ tags: 'all', sort: 'newest', author: null });
   const navigate = useNavigate();
   const [theme, toggleTheme] = useTheme();
+  const { user, token } = useAuth();
 
-  const [posts, setPosts] = useState([
-      { id: 1, author: 'Sarah Chen', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', postedAt: '2h ago', title: 'FAANG-ready Frontend Resume Template', content: 'Sharing my template that focuses on quantified achievements...', tags: ['Template', 'Frontend'], votes: 127, userVote: 'up' },
-      { id: 2, author: 'Michael Rodriguez', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100', postedAt: '5h ago', title: 'How I Boosted My ATS Score to 95%', content: 'Here are the 5 key strategies I used to transform my resume...', tags: ['ATS', 'Tips'], votes: 89, userVote: null },
-      { id: 3, author: 'Emily Johnson', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100', postedAt: '1d ago', title: 'Critique my first React developer resume?', content: 'Bootcamp grad looking for feedback. Any advice is welcome!', tags: ['Review', 'React'], votes: 45, userVote: null },
-  ]);
-  
-  const users = [
-      { id: 1, name: 'Jonathan Lee', role: 'Senior Backend Engineer', company: 'Google', avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100' },
-      { id: 2, name: 'Isabella Rossi', role: 'Lead UX Designer', company: 'Figma', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100' },
-      { id: 3, name: 'David Kim', role: 'Hiring Manager', company: 'Amazon', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=100' },
-      { id: 4, name: 'Maria Garcia', role: 'Recent Graduate', company: 'Northeastern University', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100' },
-  ];
+  const [posts, setPosts] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [userResumes, setUserResumes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredPosts = posts.filter(p => p.title.toLowerCase().includes(postSearch.toLowerCase()));
-  const filteredUsers = users.filter(u => u.name.toLowerCase().includes(peopleSearch.toLowerCase()) || u.role.toLowerCase().includes(peopleSearch.toLowerCase()));
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const params = new URLSearchParams();
+        if (filters.tags && filters.tags !== 'all') params.append('tags', filters.tags);
+        if (filters.sort) params.append('sort', filters.sort);
+        if (filters.author) params.append('author', filters.author); // Add author to query
+        
+        const { data } = await api.get(`/post/?${params.toString()}`,{
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setPosts(data.posts);
+      } catch (err) {
+        setError("Failed to fetch posts. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const fetchUsers = async () => {
+        if (!token) return;
+        try {
+            setLoading(true);
+            setError(null);
+            const { data } = await api.get('/user', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUsers(data);
+        } catch (err) {
+            setError("Failed to fetch users.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const handleVote = (postId, voteType) => {
-    setPosts(posts.map(post => {
-      if (post.id !== postId) return post;
-      if (post.userVote === voteType) return { ...post, userVote: null, votes: post.votes + (voteType === 'up' ? -1 : 1) };
-      let voteChange = voteType === 'up' ? 1 : -1;
-      if (post.userVote) voteChange *= 2;
-      return { ...post, userVote: voteType, votes: post.votes + voteChange };
-    }));
+    if (activeTab === 'resumes') {
+      fetchPosts();
+    } else {
+      fetchUsers();
+    }
+  }, [activeTab, filters, token]);
+
+  useEffect(() => {
+    const fetchUserResumes = async () => {
+        if (!token) return;
+        try {
+            const { data } = await api.get('/resumes', { headers: { Authorization: `Bearer ${token}` } });
+            if (data.success) {
+                setUserResumes(data.resumes);
+            }
+        } catch (err) {
+            console.error("Failed to fetch user resumes");
+        }
+    };
+    fetchUserResumes();
+  }, [token]);
+
+  const handleCreatePost = async (postData) => {
+    try {
+      const formData = new FormData();
+      formData.append('description', postData.description);
+      if (postData.image) formData.append('image', postData.image);
+      if (postData.tags) formData.append('tags', JSON.stringify(postData.tags));
+      if (postData.resumeId) formData.append('resumeId', postData.resumeId);
+
+      const { data } = await api.post('/post/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setPosts(prevPosts => [data, ...prevPosts]);
+      setIsPostModalOpen(false);
+      return true;
+    } catch (err) {
+      console.error("Failed to create post", err);
+      return false;
+    }
   };
 
+  const handleSavePost = (postId) => {
+    console.log(`Saving post with ID: ${postId}`);
+  };
+
+  const filteredUsers = users.filter(u => u.name.toLowerCase().includes(peopleSearch.toLowerCase()) || u.Role.toLowerCase().includes(peopleSearch.toLowerCase()));
+
   const handleConnect = (userId) => navigate(`/community/chat/${userId}`);
-  const handleCreatePost = () => setIsPostModalOpen(false);
   
   const TabButton = ({ label, tabName, icon: Icon, active }) => (
     <button
@@ -135,11 +260,16 @@ const CommunityPage = () => {
     </button>
   );
 
-  const filters = [
+  const filterCategories = [
       { key: 'all', label: 'All Posts' },
-      { key: 'templates', label: 'Templates' },
-      { key: 'reviews', label: 'Reviews' },
-      { key: 'tips', label: 'Tips & Tricks' },
+      { key: 'Template', label: 'Templates' },
+      { key: 'Review', label: 'Reviews' },
+      { key: 'Tips', label: 'Tips & Tricks' },
+  ];
+
+  const sortOptions = [
+      { key: 'newest', label: 'Newest First' },
+      { key: 'oldest', label: 'Oldest First' }
   ];
 
   return (
@@ -165,7 +295,6 @@ const CommunityPage = () => {
           </div>
       </header>
 
-      {/* Mobile Tab Navigation */}
       <div className="md:hidden p-2 bg-white dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50 flex justify-center">
           <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full flex">
               <TabButton label="Posts" tabName="resumes" icon={FileText} active={activeTab === 'resumes'} />
@@ -192,8 +321,8 @@ const CommunityPage = () => {
                     <Card className="p-4 dark:bg-slate-800">
                         <h3 className="font-semibold mb-3 text-slate-800 dark:text-white">My Activity</h3>
                         <nav className="space-y-2">
-                            <a href="#" className="flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><FileText size={16}/> My Posts</a>
-                            <a href="#" className="flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><Bookmark size={16}/> Saved Posts</a>
+                            <button onClick={() => setFilters(f => ({...f, author: user._id}))} className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><FileText size={16}/> My Posts</button>
+                            <button className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><Bookmark size={16}/> Saved Posts</button>
                         </nav>
                     </Card>
                 </aside>
@@ -207,7 +336,9 @@ const CommunityPage = () => {
                         </div>
                         <Button variant="outline" onClick={() => setIsFilterModalOpen(true)}><Filter size={16}/></Button>
                     </div>
-                    {filteredPosts.map(post => <PostCard key={post.id} post={post} onVote={handleVote} />)}
+                    {loading ? <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-blue-600" size={40}/></div> : 
+                     error ? <p className="text-center text-red-500">{error}</p> :
+                     posts.map(post => <PostCard key={post._id} post={post} onVote={() => {}} onSave={handleSavePost} />)}
                 </main>
 
                 <aside className="hidden lg:block space-y-6">
@@ -217,11 +348,20 @@ const CommunityPage = () => {
                             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
                     </div>
                      <Card className="p-4 dark:bg-slate-800">
-                        <h3 className="font-semibold mb-3 text-slate-800 dark:text-white">Filters</h3>
+                        <h3 className="font-semibold mb-3 text-slate-800 dark:text-white">Sort By</h3>
                         <div className="flex flex-col items-start gap-2">
-                            {filters.map(filter => (
-                                <button key={filter.key} onClick={() => setActiveFilter(filter.key)}
-                                    className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${activeFilter === filter.key ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                            {sortOptions.map(opt => (
+                                <button key={opt.key} onClick={() => setFilters(f => ({...f, sort: opt.key}))}
+                                    className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${filters.sort === opt.key ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                        <h3 className="font-semibold my-3 text-slate-800 dark:text-white pt-3 border-t border-slate-200 dark:border-slate-700">Category</h3>
+                        <div className="flex flex-col items-start gap-2">
+                            {filterCategories.map(filter => (
+                                <button key={filter.key} onClick={() => setFilters(f => ({...f, tags: filter.key, author: null}))}
+                                    className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${filters.tags === filter.key ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                                     {filter.label}
                                 </button>
                             ))}
@@ -245,7 +385,9 @@ const CommunityPage = () => {
                             className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-full focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {filteredUsers.map(user => <UserProfileCard key={user.id} user={user} onConnect={handleConnect} />)}
+                        {loading ? <div className="col-span-full flex justify-center items-center h-64"><Loader2 className="animate-spin text-blue-600" size={40}/></div> : 
+                         error ? <p className="col-span-full text-center text-red-500">{error}</p> :
+                         filteredUsers.map(user => <UserProfileCard key={user._id} user={user} onConnect={handleConnect} />)}
                     </div>
                 </div>
             )}
@@ -253,23 +395,8 @@ const CommunityPage = () => {
         </AnimatePresence>
       </div>
 
-      <Modal isOpen={isPostModalOpen} onClose={() => setIsPostModalOpen(false)} title="Create a New Post" size="lg">
-        <div className="space-y-6">
-          <Input label="Title" placeholder="An engaging title for your post" required />
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Content</label>
-            <textarea placeholder="Share details, ask questions, or provide tips..." rows={5}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
-            />
-          </div>
-          <div className="flex justify-end space-x-3">
-            <Button variant="outline" onClick={() => setIsPostModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreatePost}>Publish</Button>
-          </div>
-        </div>
-      </Modal>
+      <CreatePostModal isOpen={isPostModalOpen} onClose={() => setIsPostModalOpen(false)} onCreate={handleCreatePost} userResumes={userResumes} />
 
-      {/* Filter Modal for Mobile */}
       <AnimatePresence>
         {isFilterModalOpen && (
             <motion.div
@@ -292,9 +419,9 @@ const CommunityPage = () => {
                         <button onClick={() => setIsFilterModalOpen(false)} className="p-1"><X size={20}/></button>
                     </div>
                     <div className="flex flex-col items-start gap-2">
-                        {filters.map(filter => (
-                            <button key={filter.key} onClick={() => { setActiveFilter(filter.key); setIsFilterModalOpen(false); }}
-                                className={`w-full text-left px-4 py-3 rounded-lg text-md transition-colors ${activeFilter === filter.key ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                        {filterCategories.map(filter => (
+                            <button key={filter.key} onClick={() => { setFilters(f => ({...f, tags: filter.key})); setIsFilterModalOpen(false); }}
+                                className={`w-full text-left px-4 py-3 rounded-lg text-md transition-colors ${filters.tags === filter.key ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                                 {filter.label}
                             </button>
                         ))}
@@ -305,6 +432,76 @@ const CommunityPage = () => {
       </AnimatePresence>
     </div>
   );
+};
+
+// --- Create Post Modal Component ---
+const CreatePostModal = ({ isOpen, onClose, onCreate, userResumes }) => {
+    const [description, setDescription] = useState('');
+    const [image, setImage] = useState(null);
+    const [tags, setTags] = useState('');
+    const [resumeId, setResumeId] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        const success = await onCreate({ description, image, tags: tags.split(',').map(t => t.trim()).filter(t => t), resumeId });
+        if (!success) {
+            setError('Failed to create post. Please try again.');
+        } else {
+            onClose(); // Close modal on success
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        if (!isOpen) {
+            setDescription('');
+            setImage(null);
+            setTags('');
+            setResumeId('');
+            setError('');
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Create a New Post" size="lg">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Content</label>
+                    <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Share your thoughts, ask for feedback, or provide tips..." rows={5}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
+                        required
+                    />
+                </div>
+                <Input label="Tags (comma-separated)" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., Template, Frontend, Review" />
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Attach Resume (Optional)</label>
+                    <select value={resumeId} onChange={(e) => setResumeId(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent">
+                        <option value="">None</option>
+                        {userResumes.map(resume => (
+                            <option key={resume._id} value={resume._id}>{resume.ResumeTitle}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image (Optional)</label>
+                    <input type="file" onChange={(e) => setImage(e.target.files[0])} accept="image/*"
+                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                </div>
+                <div className="flex justify-end space-x-3">
+                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button type="submit" loading={loading}>Publish</Button>
+                </div>
+            </form>
+        </Modal>
+    );
 };
 
 export default CommunityPage;

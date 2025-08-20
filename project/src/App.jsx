@@ -70,6 +70,14 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/resume/jobs" 
+              element={
+                <ProtectedRoute>
+                  <JobsPage />
+                </ProtectedRoute>
+              } 
+            />
             {/* Add other protected routes here in the same way */}
 
           </Routes>
