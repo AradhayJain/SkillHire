@@ -1,7 +1,7 @@
 # SkillHire
 
 SkillHire is a [brief description of your project — e.g., "machine learning-based hiring assistance tool that evaluates candidate skills and matches them to job requirements."]
-
+ 
 ---
 
 ## 📥 Download the Model
@@ -17,5 +17,6 @@ You can download the pre-trained model from the following link:
 3. Place them in the ML/ directory in your project.
 
 ---
+
 
 
