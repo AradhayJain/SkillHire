@@ -28,6 +28,7 @@ def extract_details():
 
         # Step 4: ATS Scoring
         ats_result = calculate_general_ats_score(ner_result)
+        print(ats_result,ner_result)
 
         return jsonify({
             "extracted_text": pdf_text,
