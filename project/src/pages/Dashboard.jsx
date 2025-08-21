@@ -427,7 +427,7 @@ const Dashboard = () => {
 
               {view === 'detail' && selectedResume && (
                 <motion.div key="detail" variants={pageVariants} initial="initial" animate="in" exit="out" transition={pageTransition}>
-                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 sm:p-8 max-w-4xl mx-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 sm:p-8 max-w-8xl mx-auto">
                          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                             <div className="flex-grow">
                                 <input
