@@ -142,7 +142,7 @@ const UserProfile = ({ user }) => (
     </div>
 );
 
-const Sidebar = ({ items, brandName = "ResumeAI", user, isOpen, setIsOpen, onBackClick, theme, toggleTheme }) => {
+const Sidebar = ({ items, brandName = "ResumeAI", user, isOpen, setIsOpen, onBackClick, theme, toggleTheme,resumeId }) => {
     const location = useLocation();
     const { logout } = useAuth();
     const navigate = useNavigate();
@@ -169,7 +169,10 @@ const Sidebar = ({ items, brandName = "ResumeAI", user, isOpen, setIsOpen, onBac
                 
                 <nav className="flex-1 flex flex-col space-y-2">
                     {onBackClick && <SidebarButton item={backButton[0]} isBack={true} />}
-                    {items.map(item => <SidebarButton key={item.label} item={item} isActive={location.pathname.startsWith(item.path)} />)}
+                    {items.map(item => 
+                    item.path === '/resume/ask-ai/:resumeId'
+                        ? <SidebarButton key={item.label} item={{ ...item, path: `/resume/ask-ai/${resumeId}` }} isActive={location.pathname.startsWith(`/resume/ask-ai/${resumeId}`)} />
+                        : <SidebarButton key={item.label} item={item} isActive={location.pathname === item.path} />)}
                 </nav>
 
                 <div className="p-2 border-t border-slate-700 space-y-4">
@@ -368,7 +371,7 @@ const Dashboard = () => {
     { icon: FileText, label: 'Main', path: '/resume/main' },
     { icon: Briefcase, label: 'Job Finder', path: '/resume/jobs' },
     { icon: Target, label: 'ATS score', path: '/resume/ats-score' },
-    { icon: BrainCircuit, label: 'Ask AI', path: '/resume/ask-ai' },
+    { icon: BrainCircuit, label: 'Ask AI', path: '/resume/ask-ai/:resumeId' },
   ];
   
   // --- Animation Variants ---
@@ -386,6 +389,7 @@ const Dashboard = () => {
       <Sidebar 
         key={view}
         items={view === 'detail' ? detailSidebarItems : mainSidebarItems} 
+        resumeId= {selectedResume ? selectedResume._id : null}
         brandName={view === 'detail' && selectedResume ? selectedResume.ResumeTitle : "SkillHire"}
         user={user}
         isOpen={isSidebarOpen}
@@ -393,6 +397,7 @@ const Dashboard = () => {
         onBackClick={view === 'detail' ? handleBackToGrid : null}
         theme={theme}
         toggleTheme={toggleTheme}
+
       />
       
       <main className="flex-1 p-4 sm:p-8 flex flex-col overflow-y-auto">

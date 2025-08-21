@@ -13,6 +13,7 @@ import CommunityChat from './pages/CommunityChat';
 import ProtectedRoute from './components/ProtectedRoute';
 import HandleLogin from './components/HandleLogin';
 import ResetPasswordPage from './pages/Reset';
+import AskAiPage from './pages/Askai';
 
 function App() {
   return (
@@ -77,6 +78,15 @@ function App() {
                   <JobsPage />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/resume/ask-ai/:resumeId" 
+              element={
+                <ProtectedRoute>
+                  <AskAiPage />
+                </ProtectedRoute>
+
+              }
             />
             {/* Add other protected routes here in the same way */}
 

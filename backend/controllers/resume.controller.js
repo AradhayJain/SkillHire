@@ -263,3 +263,30 @@ export const getAnalyticsData = asyncHandler(async (req, res) => {
         },
     });
 });
+
+export const getResumesbyId = asyncHandler(async (req, res) => {
+    const { resumeId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(resumeId)) {
+        res.status(400);
+        throw new Error("Invalid Resume ID format");
+    }
+
+    const resume = await Resume.findById(resumeId);
+    if (!resume) {
+        res.status(404);
+        throw new Error("Resume not found");
+    }
+
+    if (resume.userId.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error("You are not authorized to view this resume");
+    }
+
+    res.status(200).json({
+        message: "Resume fetched successfully",
+        success: true,
+        resume,
+    });
+}
+);

@@ -5,7 +5,8 @@ import {
     getAtsScore,
     getAnalyticsData,
     getResumes,
-    deleteResume
+    deleteResume,
+    getResumesbyId
 } from "../controllers/resume.controller.js";
 import upload from "../middlewares/multer.js";
 import { protect } from "../middlewares/authMiddleware.js";
@@ -18,5 +19,7 @@ router.put("/:resumeId/ats-score", protect, getAtsScore);
 router.put("/:resumeId/analytics", protect, getAnalyticsData);
 router.get("/", protect, getResumes);
 router.delete("/:resumeId", protect, deleteResume);
+router.get("/:resumeId", protect, getResumesbyId); // Assuming you want to get a specific resume by ID
+
 
 export default router;
