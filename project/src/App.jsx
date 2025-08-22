@@ -14,6 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HandleLogin from './components/HandleLogin';
 import ResetPasswordPage from './pages/Reset';
 import AskAiPage from './pages/Askai';
+import Support from './pages/Support';
 
 function App() {
   return (
@@ -36,6 +37,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/support" 
+              element={
+                <ProtectedRoute>
+                  <Support />
                 </ProtectedRoute>
               } 
             />
@@ -72,7 +81,7 @@ function App() {
               } 
             />
             <Route 
-              path="/resume/jobs" 
+              path="/resume/jobs/:resumeId" 
               element={
                 <ProtectedRoute>
                   <JobsPage />

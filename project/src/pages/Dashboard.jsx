@@ -18,7 +18,8 @@ import {
   UploadCloud,
   Loader2,
   RefreshCw, // Icon for update button
-  Save // Icon for save button
+  Save, // Icon for save button
+  LifeBuoy
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -169,10 +170,28 @@ const Sidebar = ({ items, brandName = "ResumeAI", user, isOpen, setIsOpen, onBac
                 
                 <nav className="flex-1 flex flex-col space-y-2">
                     {onBackClick && <SidebarButton item={backButton[0]} isBack={true} />}
-                    {items.map(item => 
-                    item.path === '/resume/ask-ai/:resumeId'
-                        ? <SidebarButton key={item.label} item={{ ...item, path: `/resume/ask-ai/${resumeId}` }} isActive={location.pathname.startsWith(`/resume/ask-ai/${resumeId}`)} />
-                        : <SidebarButton key={item.label} item={item} isActive={location.pathname === item.path} />)}
+                    {items.map((item) => {
+  let newItem = { ...item };
+  let isActive = false;
+
+  if (item.path === '/resume/ask-ai/:resumeId') {
+    newItem.path = `/resume/ask-ai/${resumeId}`;
+    isActive = location.pathname.startsWith(`/resume/ask-ai/${resumeId}`);
+  } 
+  else if (item.path === '/resume/jobs') {
+    newItem.path = `/resume/jobs/${resumeId}`;
+    isActive = location.pathname.startsWith(`/resume/jobs/${resumeId}`);
+  } 
+  else {
+    isActive = location.pathname === item.path;
+  }
+
+  return (
+    <SidebarButton key={item.label} item={newItem} isActive={isActive} />
+  );
+})}
+
+                        
                 </nav>
 
                 <div className="p-2 border-t border-slate-700 space-y-4">
@@ -365,6 +384,7 @@ const Dashboard = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Users, label: 'Community', path: '/community' },
     { icon: BarChart2, label: 'Analytics', path: '/analytics' },
+    { icon: LifeBuoy, label: 'Support', path: '/support' }, // Added Support
   ];
   
   const detailSidebarItems = [

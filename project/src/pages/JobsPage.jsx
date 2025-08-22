@@ -12,7 +12,7 @@ import {
   Star,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 
 /* =========================
@@ -262,6 +262,7 @@ const SkeletonLoader = () => (
    MAIN PAGE
 ========================= */
 const JobsPage = () => {
+  const {resumeId} = useParams();
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [searchQuery, setSearchQuery] = useState('Software Developer in India');
@@ -269,6 +270,7 @@ const JobsPage = () => {
   const [totalPages, setTotalPages] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [resume, setResume] = useState(null);
 
   // Saved jobs: store map of id -> job object for persistence & offline viewing
   const [savedMap, setSavedMap] = useState(() => {
@@ -279,13 +281,44 @@ const JobsPage = () => {
       return {};
     }
   });
+  const { token } = useAuth() || {};
+  const navigate = useNavigate();
+  const [theme, toggleTheme] = useTheme();
+
+
+  useEffect(() => {
+      const fetchResume = async () => {
+
+        console.log(resumeId)
+        if (!token || !resumeId) return;
+        try {
+          
+          const { data } = await api.get(`/resumes/${resumeId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (data.success) {
+            setResume(data.resume);
+            // Set search query based on resume's bert_result
+            console.log(data)
+
+            const query = data?.resume?.analyticsData.bert_result?.predicted_label;
+            console.log(query)
+            setSearchQuery(query || 'Software Developer in India');
+
+          } else {
+            throw new Error(data.message || 'Failed to fetch resume data.');
+          }
+        } catch (err) {
+          setError('Could not load the resume. Please go back and try again.');
+        }
+      };
+      fetchResume();
+    }, [resumeId, token]);
 
   // Tab: All vs Saved
   const [tab, setTab] = useState('all'); // 'all' | 'saved'
 
-  const { token } = useAuth() || {};
-  const navigate = useNavigate();
-  const [theme, toggleTheme] = useTheme();
+ 
 
   const safeJobId = (job, idx) => job?.job_id ?? job?.id ?? `idx-${idx}`;
 

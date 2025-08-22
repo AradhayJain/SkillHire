@@ -48,9 +48,9 @@ export const AddPost = asyncHandler(async (req, res) => {
     // Populate user details for the immediate response
     const populatedPost = await CommunityPost.findById(newPost._id)
         .populate("userId", "name pic")
-        .populate("resumeId", "cloudinaryPath ResumeTitle"); // include both fields
+        .populate("resumeId", "cloudinaryPath ResumeTitle atsScore"); // include both fields
     
-    
+    console.log(populatedPost);
     res.status(201).json(populatedPost);
 });
 
