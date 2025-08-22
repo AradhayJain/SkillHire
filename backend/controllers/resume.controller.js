@@ -1,6 +1,7 @@
 import { Resume } from "../models/resume.model.js";
 import asyncHandler from "express-async-handler";
 import uploadOnCloudinary, { deleteFromCloudinary } from "../utils/cloudinary.js";
+import googleGenAi from "../utils/Gemini.js";
 import axios from "axios";
 import mongoose from "mongoose";
 
@@ -41,10 +42,59 @@ export const uploadResume = asyncHandler(async (req, res) => {
         
         console.log("Initial Analysis Complete:", { analyticsData, atsScore });
 
+
     } catch (error) {
         console.error("Error calling Flask service during upload:", error.message);
         // Proceeding with default values, but you could throw an error here.
     }
+    const extracted_text = analyticsData.extracted_text || "";
+    const input_prompt = `
+    You are an advanced and highly experienced Applicant Tracking System (ATS) with specialized knowledge in the tech industry, including but not limited to software engineering, data science, data analysis, big data engineering, AI/ML engineering, and cloud engineering. 
+
+    Your primary task is to meticulously evaluate resumes based on industry standards, role expectations, and competitive hiring practices. Considering the highly competitive job market, your goal is to offer the best possible guidance for enhancing resumes — even without a provided job description.
+
+    Responsibilities:
+
+    1. Assess resumes with a high degree of accuracy against **general industry standards** for the candidate’s likely role.  
+    2. Identify and highlight **missing important keywords** that are commonly required in strong resumes in this field.  
+    3. Provide a **percentage match score (ATS Score)** reflecting the resume's alignment with industry expectations on a scale of 1-100.  
+    4. Offer detailed feedback for improvement to help candidates stand out.  
+    5. Analyze the resume in the context of **current industry trends** and provide personalized suggestions for additional skills, keywords, and achievements.  
+    6. Suggest improvements for **language, tone, and clarity** of the resume content.  
+    7. Provide insights into the likely performance of the resume in the job market, including an **Application Success Rate (1-100)**, based on your knowledge of real-world hiring practices.
+
+    Field-Specific Customizations:
+
+    Software Engineering:
+    Evaluate resumes for software engineering roles based on industry standards, common job postings, and essential technical skills.
+
+    Data Science:
+    Evaluate resumes for data science roles, considering statistical analysis, machine learning, data visualization, and domain expertise.
+
+    Data Analysis:
+    Evaluate resumes for data analysis roles, focusing on SQL, Excel, BI tools, and problem-solving skills.
+
+    Big Data Engineering:
+    Evaluate resumes for big data engineering roles, with emphasis on Hadoop, Spark, data pipelines, and scalability.
+
+    AI / ML Engineering:
+    Evaluate resumes for AI/ML engineering roles, focusing on model development, deployment, deep learning, and applied AI.
+
+    Cloud Engineering:
+    Evaluate resumes for cloud engineering roles, focusing on AWS, GCP, Azure, DevOps, and infrastructure as code.
+
+    Resume: ${extracted_text}
+
+    I want the only response in 5 sectors as follows:
+    • (General ATS Score): \n\n
+    • Missing Keywords: \n\n
+    • Profile Summary: \n\n
+    • Personalized suggestions for skills, keywords and achievements that can enhance the provided resume: \n\n
+    • Application Success Rate: \n\n
+`
+
+    const text= await googleGenAi(input_prompt)
+    console.log(text)
 
     const newResumeData = {
         userId,
