@@ -17,10 +17,10 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",  // Detect file type automatically
-      use_filename: true,
-      unique_filename: false,
+      unique_filename: true,
       folder: "Resumes_Skillhire" // 👈 this puts the file inside the folder
     });
+    console.log("Cloudinary Upload Response:", response);
 
     fs.unlinkSync(localFilePath);
     return response; // contains public_id like "resumes_skillhire/yourFileName"
@@ -38,17 +38,25 @@ const uploadOnCloudinary = async (localFilePath) => {
 export const deleteFromCloudinary = async (cloudinaryUrl) => {
   try {
     if (!cloudinaryUrl) return null;
-    console.log(cloudinaryUrl)
+    console.log("Deleting:", cloudinaryUrl);
 
-    // Extract public_id from URL
-    // Handles nested folders and ignores version number
+    // Extract public_id
     const parts = cloudinaryUrl.split("/upload/")[1].split("/");
-    parts.shift(); // remove the version (e.g., v1234567890)
+    parts.shift(); // remove version (e.g., v1234567890)
     const publicIdWithExt = parts.join("/");
-    const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf(".")) || publicIdWithExt;
+    const publicId =
+      publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf(".")) ||
+      publicIdWithExt;
+
+    // Detect resource type from URL
+    let resourceType = "image";
+    if (cloudinaryUrl.includes("/raw/")) resourceType = "raw";
+    if (cloudinaryUrl.includes("/video/")) resourceType = "video";
 
     // Delete the asset
-    const result = await cloudinary.uploader.destroy(publicId);
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
 
     console.log("Cloudinary deletion result:", result);
     return result;
@@ -57,6 +65,7 @@ export const deleteFromCloudinary = async (cloudinaryUrl) => {
     return null;
   }
 };
+
 
 
 
