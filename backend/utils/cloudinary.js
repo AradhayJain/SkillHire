@@ -16,13 +16,14 @@ const uploadOnCloudinary = async (localFilePath) => {
     if (!localFilePath) return null;
 
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto", // Let Cloudinary detect the file type
+      resource_type: "auto",  // Detect file type automatically
       use_filename: true,
-      unique_filename: false
+      unique_filename: false,
+      folder: "Resumes_Skillhire" // 👈 this puts the file inside the folder
     });
 
     fs.unlinkSync(localFilePath);
-    return response; // Return the full response object
+    return response; // contains public_id like "resumes_skillhire/yourFileName"
   } catch (error) {
     console.error("Cloudinary Upload Error:", error);
     if (fs.existsSync(localFilePath)) {
@@ -32,27 +33,31 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
+
 // --- DELETE FUNCTION (Add this part) ---
 export const deleteFromCloudinary = async (cloudinaryUrl) => {
-    try {
-        if (!cloudinaryUrl) return null;
+  try {
+    if (!cloudinaryUrl) return null;
+    console.log(cloudinaryUrl)
 
-        // Extract the public_id from the full URL
-        // Example URL: http://res.cloudinary.com/demo/image/upload/v1573729837/sample.jpg
-        // The public_id would be 'sample' (without the extension)
-        const publicId = cloudinaryUrl.split('/').pop().split('.')[0];
+    // Extract public_id from URL
+    // Handles nested folders and ignores version number
+    const parts = cloudinaryUrl.split("/upload/")[1].split("/");
+    parts.shift(); // remove the version (e.g., v1234567890)
+    const publicIdWithExt = parts.join("/");
+    const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf(".")) || publicIdWithExt;
 
-        // Use the destroy method to delete the asset
-        const result = await cloudinary.uploader.destroy(publicId);
-        
-        console.log("Cloudinary deletion result:", result);
-        return result;
+    // Delete the asset
+    const result = await cloudinary.uploader.destroy(publicId);
 
-    } catch (error) {
-        console.error("Error deleting from Cloudinary:", error);
-        return null;
-    }
+    console.log("Cloudinary deletion result:", result);
+    return result;
+  } catch (error) {
+    console.error("Error deleting from Cloudinary:", error);
+    return null;
+  }
 };
+
 
 
 // --- EXPORTS (Update your exports) ---

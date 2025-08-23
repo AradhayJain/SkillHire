@@ -69,7 +69,7 @@ export const getPosts = asyncHandler(async (req, res) => {
     .skip(skip)
     .limit(Number(limit))
     .populate("userId", "name pic") // get user name + pic
-    .populate("resumeId", "cloudinaryPath ResumeTitle"); // include both fields
+    .populate("resumeId", "cloudinaryPath ResumeTitle atsScore"); // include both fields
   
     console.log(posts)
 

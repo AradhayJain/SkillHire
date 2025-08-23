@@ -49,58 +49,38 @@ export const uploadResume = asyncHandler(async (req, res) => {
     }
     const extracted_text = analyticsData.extracted_text || "";
     const input_prompt = `
-    You are an advanced and highly experienced Applicant Tracking System (ATS) with specialized knowledge in the tech industry, including but not limited to software engineering, data science, data analysis, big data engineering, AI/ML engineering, and cloud engineering. 
+You are an advanced and highly experienced Applicant Tracking System (ATS) specializing in tech roles such as Software Engineering, Data Science, Data Analysis, Big Data Engineering, AI/ML Engineering, and Cloud Engineering. 
 
-    Your primary task is to meticulously evaluate resumes based on industry standards, role expectations, and competitive hiring practices. Considering the highly competitive job market, your goal is to offer the best possible guidance for enhancing resumes — even without a provided job description.
+Your job is to **evaluate resumes** with precision, providing measurable insights aligned with current industry standards.
 
-    Responsibilities:
+Instructions:
+- Read the resume carefully.  
+- Respond ONLY in **valid JSON**.  
+- Do NOT include markdown formatting, code fences, or explanations.  
+- Output MUST be plain JSON that matches the schema exactly.  
 
-    1. Assess resumes with a high degree of accuracy against **general industry standards** for the candidate’s likely role.  
-    2. Identify and highlight **missing important keywords** that are commonly required in strong resumes in this field.  
-    3. Provide a **percentage match score (ATS Score)** reflecting the resume's alignment with industry expectations on a scale of 1-100.  
-    4. Offer detailed feedback for improvement to help candidates stand out.  
-    5. Analyze the resume in the context of **current industry trends** and provide personalized suggestions for additional skills, keywords, and achievements.  
-    6. Suggest improvements for **language, tone, and clarity** of the resume content.  
-    7. Provide insights into the likely performance of the resume in the job market, including an **Application Success Rate (1-100)**, based on your knowledge of real-world hiring practices.
+Schema:
+{
+  "General_ATS_Score": "Number (1-100)",
+  "Application_Success_Rate": "Number (1-100)"
+}
 
-    Field-Specific Customizations:
-
-    Software Engineering:
-    Evaluate resumes for software engineering roles based on industry standards, common job postings, and essential technical skills.
-
-    Data Science:
-    Evaluate resumes for data science roles, considering statistical analysis, machine learning, data visualization, and domain expertise.
-
-    Data Analysis:
-    Evaluate resumes for data analysis roles, focusing on SQL, Excel, BI tools, and problem-solving skills.
-
-    Big Data Engineering:
-    Evaluate resumes for big data engineering roles, with emphasis on Hadoop, Spark, data pipelines, and scalability.
-
-    AI / ML Engineering:
-    Evaluate resumes for AI/ML engineering roles, focusing on model development, deployment, deep learning, and applied AI.
-
-    Cloud Engineering:
-    Evaluate resumes for cloud engineering roles, focusing on AWS, GCP, Azure, DevOps, and infrastructure as code.
-
-    Resume: ${extracted_text}
-
-    I want the only response in 5 sectors as follows:
-    • (General ATS Score): \n\n
-    • Missing Keywords: \n\n
-    • Profile Summary: \n\n
-    • Personalized suggestions for skills, keywords and achievements that can enhance the provided resume: \n\n
-    • Application Success Rate: \n\n
+Resume Text:
+${extracted_text}
 `
 
-    const text= await googleGenAi(input_prompt)
-    console.log(text)
+
+
+const atsInsights = await googleGenAi(input_prompt);
+console.log("ATS Score:", atsInsights.General_ATS_Score);
+console.log("Application Success Rate:", atsInsights.Application_Success_Rate);
+console.log("Suggestions:", atsInsights.Personalized_Suggestions);
 
     const newResumeData = {
         userId,
         ResumeTitle: title,
         cloudinaryPath: cloudinaryUpload.url,
-        atsScore, 
+        atsScore:atsInsights.General_ATS_Score, 
         analyticsData, 
         updatesRemaining: 0, 
         ResumeString: analyticsData.extracted_text || "", 
@@ -121,6 +101,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
 export const getResumes = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     const resumes = await Resume.find({ userId }).sort({ createdAt: -1 });
+    // console.log(resumes)
 
     res.status(200).json({
         message: "Resumes fetched successfully",

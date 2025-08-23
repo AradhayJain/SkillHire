@@ -367,6 +367,7 @@ const Dashboard = () => {
   };
 
   const handleSelectResume = (resume) => {
+    console.log(resume)
     setSelectedResume(resume);
     setUpdatedTitle(resume.ResumeTitle);
     setUpdatedFile(null);
