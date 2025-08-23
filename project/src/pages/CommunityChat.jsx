@@ -1,14 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Import useCallback
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Send, Paperclip, Search, ArrowLeft, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
-// --- Mock Auth Context ---
-// This is a placeholder to make the component runnable.
-// In your actual app, you would remove this and use your real useAuth hook.
-// ADD THIS IMPORT AT THE TOP OF THE FILE
 import { useAuth } from '../contexts/AuthContext';
-
+import { useSocket } from '../contexts/SocketContext';
 
 // --- API Configuration ---
 const api = axios.create({
@@ -32,80 +28,32 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString();
 };
 
-
 // --- Main Chat Component ---
 const CommunityChat = () => {
   const { chatId } = useParams();
   const navigate = useNavigate();
   const { user, token } = useAuth();
 
+  // --- State and Refs ---
   const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  
+  const [unreadCounts, setUnreadCounts] = useState({});
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
-
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const { onlineUsers } = useSocket();
 
-
-
-
-   // --- Effect for Socket.io Connection ---
-  useEffect(() => {
-    if (token) {
-      // 1. Establish connection with auth token
-      const socket = io('http://localhost:3000', {
-        auth: {
-          token: token
-        }
-      });
-      socketRef.current = socket;
-
-      // 2. Listen for incoming messages
-      socket.on('receiveMessage', (newMessage) => {
-        // Update messages only if it belongs to the active chat
-        if (newMessage.chatId === activeChat?._id) {
-          setMessages((prevMessages) => [...prevMessages, newMessage]);
-        }
-        
-        // Also update the last message in the sidebar
-        setChats(prevChats => prevChats.map(chat => 
-          chat._id === newMessage.chatId ? { ...chat, lastMessage: newMessage } : chat
-        ));
-      });
-
-      // 3. Clean up on component unmount
-      return () => {
-        socket.disconnect();
-      };
-    }
-  }, [token, activeChat]); // Re-run if activeChat changes to update the closure
-
-  // --- Effect to Join Chat Room ---
-  useEffect(() => {
-    if (socketRef.current && activeChat) {
-      socketRef.current.emit('joinChat', activeChat._id);
-    }
-  }, [activeChat]);
-
-
-  // --- Effect to fetch all user chats for the sidebar ---
+  // --- Data Fetching Effects ---
   useEffect(() => {
     const fetchChats = async () => {
-      if (!token) {
-          setLoadingChats(false);
-          return;
-      };
+      if (!token) return;
       setLoadingChats(true);
       try {
-        // CORRECTED ENDPOINT for fetching sidebar chats
-        const { data } = await api.get('/chat/users', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const { data } = await api.get('/chat/users', { headers: { Authorization: `Bearer ${token}` } });
         setChats(data);
       } catch (err) {
         console.error("Failed to fetch chats", err);
@@ -116,17 +64,14 @@ const CommunityChat = () => {
     fetchChats();
   }, [token]);
 
-  // --- Effect to set the active chat based on URL parameter ---
   useEffect(() => {
     if (chatId && chats.length > 0) {
-      const currentChat = chats.find(c => c._id === chatId);
-      setActiveChat(currentChat || null);
+      setActiveChat(chats.find(c => c._id === chatId) || null);
     } else if (!chatId) {
-      setActiveChat(null); 
+      setActiveChat(null);
     }
   }, [chatId, chats]);
 
-  // --- Effect to fetch messages when the active chat changes ---
   useEffect(() => {
     const fetchMessages = async () => {
       if (!activeChat || !token) {
@@ -135,11 +80,9 @@ const CommunityChat = () => {
       }
       setLoadingMessages(true);
       try {
-        // CORRECTED ENDPOINT for fetching messages for a specific chat
-        const { data } = await api.get(`/chat/${activeChat._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const { data } = await api.get(`/chat/${activeChat._id}`, { headers: { Authorization: `Bearer ${token}` } });
         setMessages(data);
+        setUnreadCounts(prev => ({ ...prev, [activeChat._id]: 0 }));
       } catch (err) {
         console.error("Failed to fetch messages", err);
       } finally {
@@ -149,52 +92,80 @@ const CommunityChat = () => {
     fetchMessages();
   }, [activeChat, token]);
 
-  // --- Effect to scroll to the latest message ---
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // --- Memoized Socket Event Handlers ---
+  const handleReceiveMessage = useCallback((incomingMessage) => {
+    setChats(prevChats =>
+        prevChats.map(chat =>
+            chat._id === incomingMessage.chatId
+                ? { ...chat, lastMessage: incomingMessage, updatedAt: incomingMessage.createdAt }
+                : chat
+        ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    );
 
-  // --- Handler for sending a new message ---
+    if (incomingMessage.chatId === chatId) { // Use chatId from params for reliable comparison
+        setMessages(prevMessages => [...prevMessages, incomingMessage]);
+    }
+  }, [chatId]); // Dependency on chatId ensures it has the latest value
+
+  const handleNotification = useCallback((notificationMessage) => {
+    if (notificationMessage.chatId !== chatId) {
+        setUnreadCounts(prev => ({
+            ...prev,
+            [notificationMessage.chatId]: (prev[notificationMessage.chatId] || 0) + 1,
+        }));
+    }
+  }, [chatId]); // Dependency on chatId
+
+  // --- Socket Connection and Listeners Effect ---
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = io('http://localhost:3000', { auth: { token } });
+    socketRef.current = socket;
+
+    // ✅ **THE FIX**: Tell the server which chat room this client is joining.
+    if (activeChat) {
+      socket.emit('joinChat', activeChat._id);
+    }
+
+    socket.on('receiveMessage', handleReceiveMessage);
+    socket.on('newMessageNotification', handleNotification);
+
+    return () => {
+        socket.off('receiveMessage', handleReceiveMessage);
+        socket.off('newMessageNotification', handleNotification);
+        socket.disconnect();
+    };
+  }, [token, activeChat, handleReceiveMessage, handleNotification]); // Add handlers to dependency array
+
+  // --- UI Effects ---
+  useEffect(() => {
+    // Adding 'behavior: "smooth"' makes the scroll animated
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [messages.length]); // Trigger this effect specifically when the number of messages changes
+
+  // --- Event Handlers ---
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeChat) return;
-
+    if (!newMessage.trim() || !activeChat || sendingMessage) return;
     setSendingMessage(true);
-    const payload = {
-      messageType: 'text',
-      messageText: newMessage,
-    };
-
     try {
-      const { data: savedMessage } = await api.post(`/chat/send/${activeChat._id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // 4. Emit the message through the socket
-      socketRef.current.emit('sendMessage', savedMessage);
-
-      // Optimistically update your own UI
-      setMessages(prev => [...prev, savedMessage]);
+      await api.post(`/chat/send/${activeChat._id}`, {
+        messageType: 'text',
+        messageText: newMessage,
+      }, { headers: { Authorization: `Bearer ${token}` } });
       setNewMessage("");
-      
-      setChats(prevChats => prevChats.map(chat => 
-        chat._id === activeChat._id ? { ...chat, lastMessage: savedMessage } : chat
-      ));
-
     } catch (err) {
       console.error("Failed to send message", err);
     } finally {
       setSendingMessage(false);
     }
   };
-  // --- Helper to get display info for a chat ---
+  
   const getChatDisplayInfo = (chat) => {
     if (!chat || !user) return { name: '', pic: '' };
     if (chat.chatType === 'group') {
-      return {
-        name: chat.chatName,
-        pic: 'https://placehold.co/100x100/6366f1/ffffff?text=G'
-      };
+      return { name: chat.chatName, pic: 'https://placehold.co/100x100/6366f1/ffffff?text=G' };
     }
     const otherMember = chat.members.find(member => member._id !== user._id);
     return {
@@ -205,7 +176,7 @@ const CommunityChat = () => {
 
   const activeChatInfo = activeChat ? getChatDisplayInfo(activeChat) : null;
 
-  // --- JSX remains the same ---
+  // --- Render JSX ---
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
       {/* Sidebar */}
@@ -229,17 +200,28 @@ const CommunityChat = () => {
             <ul>
               {chats.map(chat => {
                 const info = getChatDisplayInfo(chat);
+                const unreadCount = unreadCounts[chat._id] || 0;
+                const otherMember = chat.members.find(m => m._id !== user._id);
+                const isOnline = otherMember && onlineUsers.includes(otherMember._id);
                 return (
                   <li key={chat._id} onClick={() => navigate(`/community/chat/${chat._id}`)}
                     className={`flex items-center gap-4 p-3 mx-2 my-1 cursor-pointer rounded-lg transition-colors ${activeChat?._id === chat._id ? 'bg-blue-500 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                   >
-                    <img src={info.pic} alt={info.name} className="w-12 h-12 rounded-full object-cover" />
+                    {/* ✅ ONLINE INDICATOR LOGIC */}
+                    <div className="relative flex-shrink-0">
+                      <img src={info.pic} alt={info.name} className="w-12 h-12 rounded-full object-cover" />
+                      {isOnline && (
+                        <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full bg-green-400 border-2 border-white dark:border-slate-800"></span>
+                      )}
+                    </div>
                     <div className="flex-grow overflow-hidden">
                       <div className="flex justify-between items-center">
                         <p className="font-semibold truncate">{info.name}</p>
-                        <p className={`text-xs flex-shrink-0 ml-2 ${activeChat?._id === chat._id ? 'text-blue-200' : 'text-slate-400'}`}>
-                          {chat.lastMessage ? formatDate(chat.lastMessage.createdAt) : ''}
-                        </p>
+                        {unreadCount > 0 && (
+                          <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                            {unreadCount}
+                          </span>
+                        )}
                       </div>
                       <p className={`text-sm truncate ${activeChat?._id === chat._id ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
                         {chat.lastMessage?.messageText || 'No messages yet...'}
@@ -249,6 +231,8 @@ const CommunityChat = () => {
                 );
               })}
             </ul>
+
+            
           )}
         </div>
       </aside>
@@ -277,8 +261,8 @@ const CommunityChat = () => {
                       />
                       <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-white ${
                         isCurrentUser 
-                          ? 'bg-green-500 rounded-br-none' // Current user's message: green, right
-                          : 'bg-blue-500 rounded-bl-none'   // Other user's message: blue, left
+                          ? 'bg-green-500 rounded-br-none'
+                          : 'bg-blue-500 rounded-bl-none'
                       }`}>
                         <p className="text-sm">{msg.messageText}</p>
                       </div>

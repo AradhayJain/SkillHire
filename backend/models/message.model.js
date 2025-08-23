@@ -7,10 +7,6 @@ const messageSchema = new mongoose.Schema({
   senderType: { type: String, enum: ['user', 'ai'], required: true },
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // null if senderType is 'ai'
 
-  // receiver can be a user or 'ai'
-  receiverType: { type: String, enum: ['user', 'ai'], required: true },
-  receiverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // null if receiverType is 'ai'
-
   // content
   messageType: { type: String, enum: ['text', 'image', 'file'], required: true },
   messageText: {

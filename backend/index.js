@@ -3,13 +3,15 @@ import cors from "cors";
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from "dotenv";
 import http from 'http'; // 1. Import the http module
-import { initSocket } from "./utils/socket.js"; // 2. Import your socket initializer
+import { initSocket, getIo } from "./utils/socket.js"; import { protect } from "./middlewares/authMiddleware.js";
 
 import MongoDB from "./utils/MongoDb.js";
 import userRoutes from "./routes/user.routes.js";
 import resumeRoutes from "./routes/resume.routes.js";
 import postRoutes from "./routes/post.routes.js";
 import jobRoutes from "./routes/job.routes.js";
+import messageRoutes from "./routes/message.routes.js";
+
 
 dotenv.config({});
 cloudinary.config({
@@ -17,7 +19,6 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
 const app = express();
 const server = http.createServer(app); // 3. Create an HTTP server from your Express app
 
@@ -35,11 +36,17 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use((req, res, next) => {
+    req.io = getIo();
+    next();
+});
+
 // --- API Routes ---
 app.use("/api/user", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/chat", protect,messageRoutes);
 
 
 // 5. Use server.listen instead of app.listen
