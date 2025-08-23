@@ -1,242 +1,325 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Send, 
-  ArrowLeft, 
-  Users, 
-  Smile,
-  Paperclip,
-  MoreVertical,
-  Hash,
-  AtSign,
-  User,
-  Settings,
-  Sun,
-  Moon,
-  X
-} from 'lucide-react';
-import { useNavigate, useParams } from "react-router-dom";
-import Button from '../components/ui/Button'; // Assuming this is a custom component
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Send, Paperclip, Search, ArrowLeft, Loader2 } from 'lucide-react';
+import { io } from 'socket.io-client';
+// --- Mock Auth Context ---
+// This is a placeholder to make the component runnable.
+// In your actual app, you would remove this and use your real useAuth hook.
+// ADD THIS IMPORT AT THE TOP OF THE FILE
+import { useAuth } from '../contexts/AuthContext';
 
-// --- Custom Hook for Theme Management ---
-const useTheme = () => {
-  const [theme, setTheme] = useState('light');
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(savedTheme);
-  }, []);
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+// --- API Configuration ---
+const api = axios.create({
+  baseURL: 'http://localhost:3000/api',
+});
 
-  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
-  return [theme, toggleTheme];
+// --- Helper function to format date ---
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  if (date.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday';
+  }
+  return date.toLocaleDateString();
 };
 
 
-// --- Helper to process messages for grouping ---
-const processMessages = (messages) => {
-  if (!messages || messages.length === 0) return [];
-  return messages.map((msg, index) => {
-    const prevMsg = messages[index - 1];
-    const isGroupStart = !prevMsg || prevMsg.user !== msg.user;
-    return { ...msg, isGroupStart };
-  });
-};
-
-// --- Reimagined Chat Component ---
+// --- Main Chat Component ---
 const CommunityChat = () => {
-  const [message, setMessage] = useState('');
+  const { chatId } = useParams();
   const navigate = useNavigate();
-  const { userId } = useParams();
-  const [theme, toggleTheme] = useTheme();
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+  const { user, token } = useAuth();
 
-  const [activeChat, setActiveChat] = useState({ type: 'channel', name: 'general' });
+  const [chats, setChats] = useState([]);
+  const [activeChat, setActiveChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
   
-  const [messages, setMessages] = useState([
-    { id: 1, user: 'Sarah Chen', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', message: 'Hey everyone! Just wanted to share that I got the job! Thanks for all the resume feedback 🎉', timestamp: '2:30 PM' },
-    { id: 2, user: 'Michael Rodriguez', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100', message: 'Congratulations Sarah! That\'s amazing news 👏', timestamp: '2:32 PM' },
-    { id: 3, user: 'You', avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100', message: 'That\'s fantastic! What company did you end up joining?', timestamp: '2:35 PM', isOwn: true },
-    { id: 4, user: 'Sarah Chen', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', message: 'I joined TechCorp as a Senior Frontend Developer!', timestamp: '2:38 PM' },
-    { id: 5, user: 'Sarah Chen', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', message: 'The ATS optimization tips from this community really made the difference.', timestamp: '2:38 PM' },
-    { id: 6, user: 'Emily Johnson', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100', message: 'Can you share which specific changes helped the most? I\'m still working on my resume.', timestamp: '2:40 PM' },
-  ]);
-  
+  const [loadingChats, setLoadingChats] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+
   const messagesEndRef = useRef(null);
-  const processedMessages = processMessages(messages);
+  const socketRef = useRef(null);
 
-  const onlineMembers = {
-    'Hiring Managers': [
-      { name: 'David Kim', avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=100', status: 'online' }
-    ],
-    'Developers': [
-      { name: 'Sarah Chen', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', status: 'online' },
-      { name: 'Michael Rodriguez', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100', status: 'online' },
-      { name: 'David Park', avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100', status: 'away' }
-    ],
-    'Members': [
-      { name: 'Emily Johnson', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100', status: 'online' },
-    ]
-  };
 
+
+
+   // --- Effect for Socket.io Connection ---
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView();
+    if (token) {
+      // 1. Establish connection with auth token
+      const socket = io('http://localhost:3000', {
+        auth: {
+          token: token
+        }
+      });
+      socketRef.current = socket;
+
+      // 2. Listen for incoming messages
+      socket.on('receiveMessage', (newMessage) => {
+        // Update messages only if it belongs to the active chat
+        if (newMessage.chatId === activeChat?._id) {
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
+        }
+        
+        // Also update the last message in the sidebar
+        setChats(prevChats => prevChats.map(chat => 
+          chat._id === newMessage.chatId ? { ...chat, lastMessage: newMessage } : chat
+        ));
+      });
+
+      // 3. Clean up on component unmount
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [token, activeChat]); // Re-run if activeChat changes to update the closure
+
+  // --- Effect to Join Chat Room ---
+  useEffect(() => {
+    if (socketRef.current && activeChat) {
+      socketRef.current.emit('joinChat', activeChat._id);
+    }
+  }, [activeChat]);
+
+
+  // --- Effect to fetch all user chats for the sidebar ---
+  useEffect(() => {
+    const fetchChats = async () => {
+      if (!token) {
+          setLoadingChats(false);
+          return;
+      };
+      setLoadingChats(true);
+      try {
+        // CORRECTED ENDPOINT for fetching sidebar chats
+        const { data } = await api.get('/chat/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setChats(data);
+      } catch (err) {
+        console.error("Failed to fetch chats", err);
+      } finally {
+        setLoadingChats(false);
+      }
+    };
+    fetchChats();
+  }, [token]);
+
+  // --- Effect to set the active chat based on URL parameter ---
+  useEffect(() => {
+    if (chatId && chats.length > 0) {
+      const currentChat = chats.find(c => c._id === chatId);
+      setActiveChat(currentChat || null);
+    } else if (!chatId) {
+      setActiveChat(null); 
+    }
+  }, [chatId, chats]);
+
+  // --- Effect to fetch messages when the active chat changes ---
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!activeChat || !token) {
+        setMessages([]);
+        return;
+      }
+      setLoadingMessages(true);
+      try {
+        // CORRECTED ENDPOINT for fetching messages for a specific chat
+        const { data } = await api.get(`/chat/${activeChat._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMessages(data);
+      } catch (err) {
+        console.error("Failed to fetch messages", err);
+      } finally {
+        setLoadingMessages(false);
+      }
+    };
+    fetchMessages();
+  }, [activeChat, token]);
+
+  // --- Effect to scroll to the latest message ---
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = (e) => {
+  // --- Handler for sending a new message ---
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
-    const newMessage = {
-      id: messages.length + 1,
-      user: 'You',
-      avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100',
-      message: message.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isOwn: true
+    if (!newMessage.trim() || !activeChat) return;
+
+    setSendingMessage(true);
+    const payload = {
+      messageType: 'text',
+      messageText: newMessage,
     };
-    setMessages([...messages, newMessage]);
-    setMessage('');
+
+    try {
+      const { data: savedMessage } = await api.post(`/chat/send/${activeChat._id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 4. Emit the message through the socket
+      socketRef.current.emit('sendMessage', savedMessage);
+
+      // Optimistically update your own UI
+      setMessages(prev => [...prev, savedMessage]);
+      setNewMessage("");
+      
+      setChats(prevChats => prevChats.map(chat => 
+        chat._id === activeChat._id ? { ...chat, lastMessage: savedMessage } : chat
+      ));
+
+    } catch (err) {
+      console.error("Failed to send message", err);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+  // --- Helper to get display info for a chat ---
+  const getChatDisplayInfo = (chat) => {
+    if (!chat || !user) return { name: '', pic: '' };
+    if (chat.chatType === 'group') {
+      return {
+        name: chat.chatName,
+        pic: 'https://placehold.co/100x100/6366f1/ffffff?text=G'
+      };
+    }
+    const otherMember = chat.members.find(member => member._id !== user._id);
+    return {
+      name: otherMember?.name || 'Unknown User',
+      pic: otherMember?.pic || 'https://placehold.co/100x100/a0a0a0/ffffff?text=?'
+    };
   };
 
+  const activeChatInfo = activeChat ? getChatDisplayInfo(activeChat) : null;
+
+  // --- JSX remains the same ---
   return (
-    <div className="flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-      {/* Left Sidebar: Channels & DMs */}
-      <aside className={`fixed lg:relative z-40 inset-y-0 left-0 w-64 bg-slate-200 dark:bg-slate-800 flex-shrink-0 flex flex-col transition-transform duration-300 ease-in-out ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="p-4 border-b border-slate-300 dark:border-slate-700 flex items-center justify-between">
-          <h1 className="text-lg font-bold">Community Chat</h1>
-          <button onClick={() => setLeftSidebarOpen(false)} className="lg:hidden p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white"><X size={20}/></button>
+    <div className="flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
+      {/* Sidebar */}
+      <aside className="w-full md:w-1/3 lg:w-1/4 h-screen flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Messages</h1>
+          <button onClick={() => navigate('/community')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+             <ArrowLeft size={20} />
+          </button>
         </div>
-        <div className="p-2">
-            <button onClick={() => navigate('/community')} className="w-full flex items-center gap-2 p-2 rounded-md bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600 font-semibold text-sm">
-                <ArrowLeft size={16} /> Back to Community
-            </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            <div>
-              <h2 className="px-2 text-xs font-bold uppercase text-slate-500 mb-1">Channels</h2>
-              <button onClick={() => setActiveChat({type: 'channel', name: 'general'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'general' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><Hash size={16} /> general</button>
-              <button onClick={() => setActiveChat({type: 'channel', name: 'resume-feedback'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'resume-feedback' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><Hash size={16} /> resume-feedback</button>
-            </div>
-            <div>
-              <h2 className="px-2 text-xs font-bold uppercase text-slate-500 mb-1 mt-4">Direct Messages</h2>
-              <button onClick={() => setActiveChat({type: 'dm', name: 'Sarah Chen'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'Sarah Chen' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><AtSign size={16}/> Sarah Chen</button>
-              <button onClick={() => setActiveChat({type: 'dm', name: 'Michael Rodriguez'})} className={`w-full flex items-center gap-2 p-2 rounded-md text-left ${activeChat.name === 'Michael Rodriguez' ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 font-semibold' : 'hover:bg-slate-300 dark:hover:bg-slate-700'}`}><AtSign size={16}/> Michael Rodriguez</button>
-            </div>
-        </div>
-        <div className="p-2 border-t border-slate-300 dark:border-slate-700">
-            <div className="flex items-center justify-between p-2 rounded-md hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer">
-                <div className="flex items-center gap-2">
-                    <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100" className="w-8 h-8 rounded-full" />
-                    <span className="text-sm font-semibold">You</span>
-                </div>
-                <Settings size={16} />
-            </div>
-        </div>
-      </aside>
-
-      {/* Center: Main Chat Pane */}
-      <main className="flex-1 flex flex-col bg-white dark:bg-slate-900">
-        <header className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
-            <div className="flex items-center gap-3">
-                <button onClick={() => setLeftSidebarOpen(true)} className="p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white lg:hidden"><Hash size={20}/></button>
-                <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100" className="w-9 h-9 rounded-full"/>
-                        <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-white"></span>
-                    </div>
-                    <div>
-                        <h2 className="text-base font-semibold">{activeChat.name}</h2>
-                        <p className="text-xs text-slate-500">Active now</p>
-                    </div>
-                </div>
-            </div>
-            <div className="flex items-center gap-2">
-                <button onClick={() => setRightSidebarOpen(true)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"><Users size={20}/></button>
-                <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                </button>
-                <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><MoreVertical size={20}/></button>
-            </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-1">
-          {processedMessages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className={`flex items-end gap-2 group ${msg.isOwn ? 'justify-end' : ''} ${msg.isGroupStart ? 'mt-4' : ''}`}
-            >
-              { !msg.isOwn && msg.isGroupStart && <img src={msg.avatar} className="w-8 h-8 rounded-full"/> }
-              { !msg.isOwn && !msg.isGroupStart && <div className="w-8"/> }
-
-              <div className={`flex flex-col max-w-lg ${msg.isOwn ? 'items-end' : 'items-start'}`}>
-                { !msg.isOwn && msg.isGroupStart && <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 ml-3">{msg.user}</p> }
-                <div className={`px-4 py-2 rounded-2xl ${msg.isOwn ? 'bg-blue-600 text-white rounded-br-lg' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-bl-lg'}`}>
-                  <p className="text-sm">{msg.message}</p>
-                </div>
-              </div>
-              
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="p-1 text-slate-400 hover:text-slate-600"><Smile size={16}/></button>
-              </div>
-            </motion.div>
-          ))}
+        <div className="p-3 flex-shrink-0">
+          <div className="relative">
+            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" placeholder="Search chats..." className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700 border border-transparent rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
           </div>
-          <div ref={messagesEndRef} />
         </div>
-
-        <footer className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
-            <button type="button" className="p-2 text-slate-500 hover:text-blue-600"><Paperclip size={20}/></button>
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={`Message #${activeChat.name}`}
-              className="flex-1 bg-transparent focus:outline-none text-sm"
-            />
-            <Button type="submit" size="sm" className="rounded-lg" disabled={!message.trim()}>
-              <Send size={16} />
-            </Button>
-          </form>
-        </footer>
-      </main>
-
-      {/* Right Sidebar: Members Info */}
-      <aside className={`fixed lg:relative z-40 inset-y-0 right-0 w-80 bg-slate-100 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex-shrink-0 flex flex-col transition-transform duration-300 ease-in-out ${rightSidebarOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0`}>
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <h3 className="font-semibold">Members</h3>
-            <button onClick={() => setRightSidebarOpen(false)} className="lg:hidden p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white"><X size={20}/></button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-            {Object.entries(onlineMembers).map(([role, members]) => (
-                <div key={role} className="mb-4">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">{role} - {members.length}</h4>
-                    <div className="space-y-2">
-                        {members.map(member => (
-                            <div key={member.name} className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">
-                                <div className="relative">
-                                    <img src={member.avatar} className="w-8 h-8 rounded-full" />
-                                    <span className={`absolute bottom-0 right-0 block h-2 w-2 rounded-full border border-white dark:border-slate-800 ${member.status === 'online' ? 'bg-green-500' : 'bg-yellow-400'}`}></span>
-                                </div>
-                                <span className="text-sm font-medium">{member.name}</span>
-                            </div>
-                        ))}
+        <div className="flex-grow overflow-y-auto">
+          {loadingChats ? (
+            <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
+          ) : (
+            <ul>
+              {chats.map(chat => {
+                const info = getChatDisplayInfo(chat);
+                return (
+                  <li key={chat._id} onClick={() => navigate(`/community/chat/${chat._id}`)}
+                    className={`flex items-center gap-4 p-3 mx-2 my-1 cursor-pointer rounded-lg transition-colors ${activeChat?._id === chat._id ? 'bg-blue-500 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  >
+                    <img src={info.pic} alt={info.name} className="w-12 h-12 rounded-full object-cover" />
+                    <div className="flex-grow overflow-hidden">
+                      <div className="flex justify-between items-center">
+                        <p className="font-semibold truncate">{info.name}</p>
+                        <p className={`text-xs flex-shrink-0 ml-2 ${activeChat?._id === chat._id ? 'text-blue-200' : 'text-slate-400'}`}>
+                          {chat.lastMessage ? formatDate(chat.lastMessage.createdAt) : ''}
+                        </p>
+                      </div>
+                      <p className={`text-sm truncate ${activeChat?._id === chat._id ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {chat.lastMessage?.messageText || 'No messages yet...'}
+                      </p>
                     </div>
-                </div>
-            ))}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </aside>
+
+      {/* Main Chat Window */}
+      <main className="hidden md:flex flex-1 flex-col h-screen">
+        {activeChat ? (
+          <>
+            <header className="flex items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
+              <img src={activeChatInfo.pic} alt={activeChatInfo.name} className="w-10 h-10 rounded-full object-cover mr-4" />
+              <h2 className="font-bold text-lg text-slate-900 dark:text-white">{activeChatInfo.name}</h2>
+            </header>
+
+            <div className="flex-grow overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900/80">
+              {loadingMessages ? (
+                <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
+              ) : (
+                messages.map(msg => {
+                  const isCurrentUser = msg.senderId._id === user._id;
+                  return (
+                    <div key={msg._id} className={`flex items-end gap-3 my-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
+                      <img 
+                        src={msg.senderId.pic || 'https://placehold.co/100x100/a0a0a0/ffffff?text=?'} 
+                        alt={msg.senderId.name} 
+                        className="w-8 h-8 rounded-full object-cover" 
+                      />
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-white ${
+                        isCurrentUser 
+                          ? 'bg-green-500 rounded-br-none' // Current user's message: green, right
+                          : 'bg-blue-500 rounded-bl-none'   // Other user's message: blue, left
+                      }`}>
+                        <p className="text-sm">{msg.messageText}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <footer className="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+                <button type="button" className="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700">
+                  <Paperclip size={20} />
+                </button>
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 w-full px-4 py-2 bg-slate-100 dark:bg-slate-700 border border-transparent rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  autoComplete="off"
+                />
+                <button type="submit" disabled={!newMessage.trim() || sendingMessage} className="p-3 rounded-full bg-blue-500 text-white disabled:bg-blue-300 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors">
+                  {sendingMessage ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                </button>
+              </form>
+            </footer>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 bg-slate-50 dark:bg-slate-900/80">
+            <div className="text-center">
+              <svg className="w-32 h-32 mx-auto mb-4 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-300">Select a Chat</h2>
+              <p className="mt-2">Choose a conversation from the sidebar to start messaging.</p>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 };

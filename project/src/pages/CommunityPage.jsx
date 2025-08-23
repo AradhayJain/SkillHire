@@ -246,7 +246,45 @@ const CommunityPage = () => {
 
   const filteredUsers = users.filter(u => u.name.toLowerCase().includes(peopleSearch.toLowerCase()) || u.Role.toLowerCase().includes(peopleSearch.toLowerCase()));
 
-  const handleConnect = (userId) => navigate(`/community/chat/${userId}`);
+  const handleConnect = async (otherUserId) => {
+    // Ensure the user is authenticated
+    if (!token) {
+      console.error("Authentication token is missing.");
+      // You might want to navigate to the login page or show a message
+      return;
+    }
+
+    try {
+      // The backend expects an object with 'chatType' and 'members' array.
+      // Your controller automatically adds the current logged-in user,
+      // so we only need to send the ID of the user we want to connect with.
+      const payload = {
+        chatType: 'private',
+        members: [otherUserId],
+      };
+
+      // Make the POST request to create or retrieve the chat
+      const { data: chat } = await api.post(
+        '/chat/new_chat', // Your API endpoint
+        payload,          // The request body
+        {
+          headers: { Authorization: `Bearer ${token}` }, // Pass the auth token
+        }
+      );
+
+      // The API returns the full chat object (either newly created or existing).
+      // We extract its _id for navigation.
+      if (chat && chat._id) {
+        navigate(`/community/chat/${chat._id}`);
+      } else {
+        // This is a safeguard in case the API response is not as expected
+        console.error("API did not return a valid chat object with an _id:", chat);
+      }
+    } catch (err) {
+      console.error("Failed to initiate chat:", err);
+      // Optionally, show an error message to the user here
+    }
+  };
   
   const TabButton = ({ label, tabName, icon: Icon, active }) => (
     <button

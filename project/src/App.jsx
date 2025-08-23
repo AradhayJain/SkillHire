@@ -65,7 +65,7 @@ function App() {
               } 
             />
             <Route 
-              path="/community/chat/:userId" 
+              path="/community/chat/:chatId" 
               element={
                 <ProtectedRoute>
                   <CommunityChat />
