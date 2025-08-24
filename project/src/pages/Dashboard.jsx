@@ -389,9 +389,7 @@ const Dashboard = () => {
   ];
   
   const detailSidebarItems = [
-    { icon: FileText, label: 'Main', path: '/resume/main' },
     { icon: Briefcase, label: 'Job Finder', path: '/resume/jobs' },
-    { icon: Target, label: 'ATS score', path: '/resume/ats-score' },
     { icon: BrainCircuit, label: 'Ask AI', path: '/resume/ask-ai/:resumeId' },
   ];
   

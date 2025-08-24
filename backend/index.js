@@ -3,14 +3,15 @@ import cors from "cors";
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from "dotenv";
 import http from 'http'; // 1. Import the http module
-import { initSocket, getIo } from "./utils/socket.js"; import { protect } from "./middlewares/authMiddleware.js";
-
+import { initSocket, getIo } from "./utils/socket.js"; 
+import { protect } from "./middlewares/authMiddleware.js";
 import MongoDB from "./utils/MongoDb.js";
 import userRoutes from "./routes/user.routes.js";
 import resumeRoutes from "./routes/resume.routes.js";
 import postRoutes from "./routes/post.routes.js";
 import jobRoutes from "./routes/job.routes.js";
 import messageRoutes from "./routes/message.routes.js";
+import supportRoutes from "./routes/support.routes.js";
 
 
 dotenv.config({});
@@ -47,6 +48,8 @@ app.use("/api/resumes", resumeRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/chat", protect,messageRoutes);
+app.use("/api/support", supportRoutes);
+
 
 
 // 5. Use server.listen instead of app.listen
