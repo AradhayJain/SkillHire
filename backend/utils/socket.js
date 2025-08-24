@@ -1,14 +1,20 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { User } from '../models/user.model.js';
 
-// This object will store a mapping of { userId: socketId }
+// --- AI Client (Gemini) ---
+const genAI = new GoogleGenerativeAI("AIzaSyDy2dYTvbAcdqkbsO7t-nJCMaLiIYlTdO0");
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+// --- Online User Tracking ---
 const userSocketMap = {}; 
 let io = null;
 
-// Getter function to access the io instance in other files (like controllers)
+// Getter function to access io in controllers
 export const getIo = () => io;
 
-// Getter function to find a user's socket ID
+// Getter to find a receiver's socketId
 export const getReceiverSocketId = (receiverId) => {
     return userSocketMap[receiverId];
 };
@@ -16,14 +22,13 @@ export const getReceiverSocketId = (receiverId) => {
 export const initSocket = (server) => {
     io = new Server(server, { 
         cors: {
-            // This origin MUST exactly match the URL in your browser's address bar
-            origin: "http://localhost:5173", 
+            origin: "http://localhost:5173", // must match frontend
             methods: ["GET", "POST"],
             credentials: true
         }
     });
 
-    // Middleware to authenticate socket connections using the JWT
+    // --- Middleware for Auth ---
     io.use((socket, next) => {
         const token = socket.handshake.auth.token;
         if (!token) {
@@ -33,36 +38,84 @@ export const initSocket = (server) => {
             if (err) {
                 return next(new Error('Authentication error: Invalid token'));
             }
-            // Attach the user's ID to the socket object for easy access
             socket.userId = decoded.id; 
             next();
         });
     });
 
-    io.on('connection', (socket) => {
+    // --- Connection Handler ---
+    io.on('connection', async (socket) => {
         const userId = socket.userId;
         console.log('A user connected:', userId);
 
-        // Add the new user to our map of online users
+        // Add user to map
         if (userId) {
             userSocketMap[userId] = socket.id;
         }
 
-        // Broadcast the updated list of online user IDs to ALL clients
+        // Broadcast online users
         io.emit('getOnlineUsers', Object.keys(userSocketMap));
 
-        // Listener for when a client wants to join a specific chat room
+        // --- Normal User-to-User Chat (unchanged names) ---
         socket.on('joinChat', (chatId) => {
             socket.join(chatId);
             console.log(`User ${userId} joined chat room: ${chatId}`);
         });
 
-        // Listener for when a client disconnects
+        socket.on('sendMessage', ({ chatId, message }) => {
+            io.to(chatId).emit('receiveMessage', {
+                sender: userId,
+                message,
+                chatId,
+                timestamp: new Date()
+            });
+        });
+
+        // --- AI Resume Coach Chat (renamed events) ---
+        socket.on('joinAIChat', async () => {
+            try {
+                const user = await User.findById(userId).select('name');
+                if (user) {
+                    const welcomeMessage = {
+                        sender: 'ai',
+                        text: `Hello ${user.name.split(' ')[0]}! I'm your AI career coach. How can I help you improve your resume today?`
+                    };
+                    socket.emit('aiMessage', welcomeMessage);
+                }
+            } catch (error) {
+                console.error("Could not fetch user for welcome message:", error);
+            }
+        });
+
+        socket.on('sendAIMessage', async ({ resumeText, userQuestion }) => {
+            if (!resumeText || !userQuestion) {
+                return socket.emit('aiError', { sender: 'ai', text: 'Missing resume text or question.' });
+            }
+
+            const prompt = `You are a professional career coach reviewing a resume. Your tone should be encouraging and helpful. Based ONLY on the following resume text, answer the user's question. Do not invent information not present in the text.
+
+            --- RESUME TEXT ---
+            ${resumeText}
+            --- END RESUME TEXT ---
+
+            User's Question: "${userQuestion}"`;
+
+            try {
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text();
+                
+                socket.emit('aiMessage', { sender: 'ai', text });
+            } catch (error) {
+                console.error("Error with Gemini API:", error);
+                socket.emit('aiError', { sender: 'ai', text: 'Sorry, I could not process your request at the moment.' });
+            }
+        });
+
+        // --- Disconnect ---
         socket.on('disconnect', () => {
             console.log('User disconnected:', userId);
-            // Remove the user from the map
             delete userSocketMap[userId];
-            // Broadcast the final list of online users to ALL clients
             io.emit('getOnlineUsers', Object.keys(userSocketMap));
         });
     });

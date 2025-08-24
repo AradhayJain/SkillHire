@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'; // Import useCallback
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Send, Paperclip, Search, ArrowLeft, Loader2 } from 'lucide-react';
@@ -72,17 +72,20 @@ const CommunityChat = () => {
     }
   }, [chatId, chats]);
 
+  // ✅ FIX: This effect now only fetches messages when the chatId changes.
+  // It no longer depends on the unstable `activeChat` object.
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!activeChat || !token) {
+      // Use `chatId` directly for the condition and API call
+      if (!chatId || !token) {
         setMessages([]);
         return;
       }
       setLoadingMessages(true);
       try {
-        const { data } = await api.get(`/chat/${activeChat._id}`, { headers: { Authorization: `Bearer ${token}` } });
+        const { data } = await api.get(`/chat/${chatId}`, { headers: { Authorization: `Bearer ${token}` } });
         setMessages(data);
-        setUnreadCounts(prev => ({ ...prev, [activeChat._id]: 0 }));
+        setUnreadCounts(prev => ({ ...prev, [chatId]: 0 }));
       } catch (err) {
         console.error("Failed to fetch messages", err);
       } finally {
@@ -90,7 +93,7 @@ const CommunityChat = () => {
       }
     };
     fetchMessages();
-  }, [activeChat, token]);
+  }, [chatId, token]); // The dependency is now the stable `chatId` from the URL
 
   // --- Memoized Socket Event Handlers ---
   const handleReceiveMessage = useCallback((incomingMessage) => {
@@ -102,10 +105,10 @@ const CommunityChat = () => {
         ).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
     );
 
-    if (incomingMessage.chatId === chatId) { // Use chatId from params for reliable comparison
+    if (incomingMessage.chatId === chatId) { 
         setMessages(prevMessages => [...prevMessages, incomingMessage]);
     }
-  }, [chatId]); // Dependency on chatId ensures it has the latest value
+  }, [chatId]); 
 
   const handleNotification = useCallback((notificationMessage) => {
     if (notificationMessage.chatId !== chatId) {
@@ -114,18 +117,19 @@ const CommunityChat = () => {
             [notificationMessage.chatId]: (prev[notificationMessage.chatId] || 0) + 1,
         }));
     }
-  }, [chatId]); // Dependency on chatId
+  }, [chatId]);
 
   // --- Socket Connection and Listeners Effect ---
+  // This section is reverted to your original logic
+  const activeChatId = activeChat?._id;
   useEffect(() => {
     if (!token) return;
 
     const socket = io('http://localhost:3000', { auth: { token } });
     socketRef.current = socket;
 
-    // ✅ **THE FIX**: Tell the server which chat room this client is joining.
-    if (activeChat) {
-      socket.emit('joinChat', activeChat._id);
+    if (activeChatId) {
+      socket.emit('joinChat', activeChatId);
     }
 
     socket.on('receiveMessage', handleReceiveMessage);
@@ -136,13 +140,12 @@ const CommunityChat = () => {
         socket.off('newMessageNotification', handleNotification);
         socket.disconnect();
     };
-  }, [token, activeChat, handleReceiveMessage, handleNotification]); // Add handlers to dependency array
+  }, [token, activeChatId, handleReceiveMessage, handleNotification]);
 
   // --- UI Effects ---
   useEffect(() => {
-    // Adding 'behavior: "smooth"' makes the scroll animated
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-}, [messages.length]); // Trigger this effect specifically when the number of messages changes
+  }, [messages.length]);
 
   // --- Event Handlers ---
   const handleSendMessage = async (e) => {
@@ -174,9 +177,10 @@ const CommunityChat = () => {
     };
   };
 
-  const activeChatInfo = activeChat ? getChatDisplayInfo(activeChat) : null;
+  const activeChatInfo = useMemo(() => activeChat ? getChatDisplayInfo(activeChat) : null, [activeChat, user]);
 
   // --- Render JSX ---
+  // (The entire JSX block remains unchanged)
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
       {/* Sidebar */}
@@ -207,7 +211,6 @@ const CommunityChat = () => {
                   <li key={chat._id} onClick={() => navigate(`/community/chat/${chat._id}`)}
                     className={`flex items-center gap-4 p-3 mx-2 my-1 cursor-pointer rounded-lg transition-colors ${activeChat?._id === chat._id ? 'bg-blue-500 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                   >
-                    {/* ✅ ONLINE INDICATOR LOGIC */}
                     <div className="relative flex-shrink-0">
                       <img src={info.pic} alt={info.name} className="w-12 h-12 rounded-full object-cover" />
                       {isOnline && (
@@ -231,15 +234,13 @@ const CommunityChat = () => {
                 );
               })}
             </ul>
-
-            
           )}
         </div>
       </aside>
 
       {/* Main Chat Window */}
       <main className="hidden md:flex flex-1 flex-col h-screen">
-        {activeChat ? (
+        {activeChat && activeChatInfo ? (
           <>
             <header className="flex items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
               <img src={activeChatInfo.pic} alt={activeChatInfo.name} className="w-10 h-10 rounded-full object-cover mr-4" />
@@ -259,10 +260,10 @@ const CommunityChat = () => {
                         alt={msg.senderId.name} 
                         className="w-8 h-8 rounded-full object-cover" 
                       />
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-white ${
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl ${
                         isCurrentUser 
-                          ? 'bg-green-500 rounded-br-none'
-                          : 'bg-blue-500 rounded-bl-none'
+                          ? 'bg-green-500 text-white rounded-br-none'
+                          : 'bg-blue-500 text-slate-100 rounded-bl-none'
                       }`}>
                         <p className="text-sm">{msg.messageText}</p>
                       </div>

@@ -82,55 +82,60 @@ const AskAiPage = () => {
   }, [resumeId, token]);
 
   // --- Effect for WebSocket Connection ---
-  useEffect(() => {
-    if (!token) return; // Don't connect if there's no token
+  // --- inside useEffect for WebSocket Connection ---
+useEffect(() => {
+  if (!token) return; // Don't connect if there's no token
 
-    socketRef.current = io('http://localhost:3000', {
-        auth: { token } // Send token on connection
-    });
+  socketRef.current = io('http://localhost:3000', {
+      auth: { token }
+  });
 
-    socketRef.current.on('aiResponse', (aiMessage) => {
-        setMessages(prev => [...prev, aiMessage]);
-        setIsAiTyping(false);
-    });
+  // Join AI chat room (so backend sends welcome msg)
+  socketRef.current.emit('joinAIChat');
 
-    socketRef.current.on('aiError', (errorMessage) => {
-        setMessages(prev => [...prev, errorMessage]);
-        setIsAiTyping(false);
-    });
+  socketRef.current.on('aiMessage', (aiMessage) => {
+      setMessages(prev => [...prev, aiMessage]);
+      setIsAiTyping(false);
+  });
 
-    return () => {
-        socketRef.current.disconnect();
-    };
-  }, [token]);
+  socketRef.current.on('aiError', (errorMessage) => {
+      setMessages(prev => [...prev, errorMessage]);
+      setIsAiTyping(false);
+  });
 
+  return () => {
+      socketRef.current.disconnect();
+  };
+}, [token]);
+
+// --- inside handleSendMessage ---
+const handleSendMessage = (e) => {
+  e.preventDefault();
+  if (!input.trim() || isAiTyping || !socketRef.current) return;
+
+  const userMessage = { sender: 'user', text: input };
+  setMessages(prev => [...prev, userMessage]);
+  
+  const resumeText = resume?.analyticsData?.extracted_text;
+  if (!resumeText) {
+      const errMessage = { sender: 'ai', text: "Sorry, the resume content is not available for analysis." };
+      setMessages(prev => [...prev, errMessage]);
+      return;
+  }
+
+  // ✅ updated event name
+  socketRef.current.emit('sendAIMessage', {
+      resumeText: resumeText,
+      userQuestion: input,
+  });
+
+  setInput('');
+  setIsAiTyping(true);
+};
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isAiTyping]);
-
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!input.trim() || isAiTyping || !socketRef.current) return;
-
-    const userMessage = { sender: 'user', text: input };
-    setMessages(prev => [...prev, userMessage]);
-    
-    const resumeText = resume?.analyticsData?.extracted_text;
-    if (!resumeText) {
-        const errMessage = { sender: 'ai', text: "Sorry, the resume content is not available for analysis." };
-        setMessages(prev => [...prev, errMessage]);
-        return;
-    }
-
-    socketRef.current.emit('sendMessage', {
-        resumeText: resumeText,
-        userQuestion: input,
-    });
-
-    setInput('');
-    setIsAiTyping(true);
-  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900"><Loader2 className="animate-spin text-blue-600" size={48} /></div>;
