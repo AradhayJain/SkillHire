@@ -173,13 +173,13 @@ export const forgotPassword = asyncHandler(async (req, res) => {
         throw new Error("User not found");
     }
 
-    // Get reset token
+    // Get reset tokenlocalhost
     const resetToken = user.getResetPasswordToken();
     console.log("Reset Token:", resetToken); // For development
     await user.save({ validateBeforeSave: false });
 
     // Create reset url
-    const resetUrl = `http://localhost:5174/reset-password/${resetToken}`;
+    const resetUrl = `http://frontend:5173/reset-password/${resetToken}`;
 
     const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please click the following link to reset your password: \n\n ${resetUrl}`;
 

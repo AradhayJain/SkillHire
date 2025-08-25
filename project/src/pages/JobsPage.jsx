@@ -19,7 +19,7 @@ import axios from 'axios';
    API CONFIG
 ========================= */
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: 'http://backend:3000/api',
 });
 
 /* =========================

@@ -60,7 +60,7 @@ const ResetPasswordPage = () => {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/user/reset-password/${resettoken}`, {
+      const res = await fetch(`http://backend:3000/api/user/reset-password/${resettoken}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
