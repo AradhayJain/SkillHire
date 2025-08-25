@@ -79,7 +79,7 @@ const OtpModal = ({ email, onClose, onVerifySuccess }) => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://backend:3000/api/user/register-verify-otp', {
+            const res = await fetch('http://localhost:3000/api/user/register-verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp })
@@ -134,7 +134,7 @@ const ForgotPasswordModal = ({ onClose, onLinkSent }) => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://backend:3000/api/user/forgot-password', {
+            const res = await fetch('http://localhost:3000/api/user/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -238,7 +238,7 @@ const AuthPage = ({ type }) => {
     try {
       if (isLogin) {
         // --- Standard LOGIN LOGIC ---
-        const res = await fetch('http://backend:3000/api/user/login', {
+        const res = await fetch('http://localhost:3000/api/user/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, password: formData.password })
@@ -252,7 +252,7 @@ const AuthPage = ({ type }) => {
         const data = new FormData();
         Object.keys(formData).forEach(key => data.append(key, formData[key]));
         
-        const res = await fetch('http://backend:3000/api/user/register-request-otp', { method: 'POST', body: data });
+        const res = await fetch('http://localhost:3000/api/user/register-request-otp', { method: 'POST', body: data });
         if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
         
         setAuthStep('otp');
@@ -273,7 +273,7 @@ const AuthPage = ({ type }) => {
     setError('');
     try {
         const token = credentialResponse.credential;
-        const res = await fetch('http://backend:3000/api/user/google-auth', {
+        const res = await fetch('http://localhost:3000/api/user/google-auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token })

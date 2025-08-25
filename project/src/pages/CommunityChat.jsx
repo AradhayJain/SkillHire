@@ -8,7 +8,7 @@ import { useSocket } from '../contexts/SocketContext';
 
 // --- API Configuration ---
 const api = axios.create({
-  baseURL: 'http://backend:3000/api',
+  baseURL: 'http://localhost:3000/api',
 });
 
 // --- Helper function to format date ---
@@ -125,7 +125,7 @@ const CommunityChat = () => {
   useEffect(() => {
     if (!token) return;
 
-    const socket = io('http://backend:3000', { auth: { token } });
+    const socket = io('http://localhost:3000', { auth: { token } });
     socketRef.current = socket;
 
     if (activeChatId) {

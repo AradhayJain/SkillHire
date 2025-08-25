@@ -156,7 +156,7 @@ export default function Support() {
     if (Object.keys(newErrors).length === 0) {
       try {
         setLoading(true);
-        const res = await fetch('http://backend:3000/api/support/get-support', {
+        const res = await fetch('http://localhost:3000/api/support/get-support', {
           method: 'POST',
           headers: { 
             Authorization: `Bearer ${token}`,

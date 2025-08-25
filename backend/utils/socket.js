@@ -22,7 +22,7 @@ export const getReceiverSocketId = (receiverId) => {
 export const initSocket = (server) => {
     io = new Server(server, { 
         cors: {
-            origin: "http://frontend:5173", // must match frontend
+            origin: "http://localhost:5173", // must match frontend
             methods: ["GET", "POST"],
             credentials: true
         }

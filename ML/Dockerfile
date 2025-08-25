@@ -1,26 +1,29 @@
-# Use a specific slim image
+# Use slim Python base image
 FROM python:3.10-slim
 
-# Set the working directory
+# System deps for PyMuPDF (fitz) and OpenCV
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set workdir
 WORKDIR /app
 
-# Create a non-root user and switch to it
-# This is a security best practice
-RUN useradd -m myappuser
-USER myappuser
+# Copy requirements first (for caching layers)
+COPY ./requirements.txt /app/requirements.txt
 
-# Copy requirements first to leverage Docker's layer cache
-COPY --chown=myappuser:myappuser requirements.txt .
+# Upgrade pip and install deps with longer timeout + retries
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --default-timeout=100 -r requirements.txt
+    # If timeout persists, try using a faster mirror:
+    # pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple --default-timeout=100 -r requirements.txt
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the rest of the code
+COPY . .
 
-# Copy the rest of the application code
-# (Assumes you have a .dockerignore file)
-COPY --chown=myappuser:myappuser . .
-
-# Expose the port the app runs on (make sure this matches your app)
+# Expose port (if running API)
 EXPOSE 5000
 
-# Command to run the application
+# Default command (update if you use FastAPI/Flask etc.)
 CMD ["python", "app.py"]

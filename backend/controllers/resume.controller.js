@@ -31,7 +31,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
     let atsScore = 0;
     try {
         // Call the single Flask service endpoint
-        const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_details", { 
+        const flaskResponse = await axios.post("http://ml:5000/extract_details", { 
             pdf_url: cloudinaryUpload.url 
         });
 
@@ -146,7 +146,7 @@ export const updateResume = asyncHandler(async (req, res) => {
         
         // --- Re-run full analysis when a new file is uploaded ---
         try {
-            const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_one", { 
+            const flaskResponse = await axios.post("http://ml:5000/extract_one", { 
                 pdf_url: newUpload.url 
             });
             

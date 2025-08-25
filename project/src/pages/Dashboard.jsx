@@ -27,7 +27,7 @@ import axios from 'axios';
 
 // --- API Configuration ---
 const api = axios.create({
-  baseURL: 'http://backend:3000/api',
+  baseURL: 'http://localhost:3000/api',
 });
 
 // --- Custom Hook for Theme Management ---
