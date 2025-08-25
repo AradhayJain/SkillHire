@@ -61,19 +61,44 @@ export const AddPost = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const getPosts = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10 } = req.query;
+    const { 
+        page = 1, 
+        limit = 10, 
+        tags, 
+        author, 
+        sort = "newest" 
+    } = req.query;
+
     const skip = (page - 1) * limit;
 
-    const posts = await CommunityPost.find({})
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(Number(limit))
-    .populate("userId", "name pic") // get user name + pic
-    .populate("resumeId", "cloudinaryPath ResumeTitle atsScore"); // include both fields
-  
-    console.log(posts)
+    // Build filters dynamically
+    const filter = {};
+    if (tags) {
+        console.log(tags)
+        console.log(typeof tags)
+        // tags can be comma separated -> split into array
+        filter.tags = { $in: tags.split(",") };
+        console.log(filter.tags)
+    }
+    if (author) {
+        filter.userId = author; // expecting userId from frontend
+    }
 
-    const totalPosts = await CommunityPost.countDocuments({});
+    // Sorting logic
+    let sortOption = { createdAt: -1 }; // default newest
+    if (sort === "oldest") sortOption = { createdAt: 1 };
+    if (sort === "popular") sortOption = { likes: -1 }; // example: sort by likes
+
+    // Fetch posts
+    const posts = await CommunityPost.find(filter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(Number(limit))
+        .populate("userId", "name pic") // populate user
+        .populate("resumeId", "cloudinaryPath ResumeTitle atsScore"); // populate resume fields
+
+    // Pagination data
+    const totalPosts = await CommunityPost.countDocuments(filter);
     const totalPages = Math.ceil(totalPosts / limit);
 
     res.status(200).json({
