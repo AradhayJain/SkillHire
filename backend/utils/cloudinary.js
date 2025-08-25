@@ -18,7 +18,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",  // Detect file type automatically
       unique_filename: true,
-      folder: "Resumes_SkillSnap" // 👈 this puts the file inside the folder
+      folder: "Resumes_Skillhire" // 👈 this puts the file inside the folder
     });
     console.log("Cloudinary Upload Response:", response);
 
