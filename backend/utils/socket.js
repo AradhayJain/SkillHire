@@ -2,9 +2,10 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { User } from '../models/user.model.js';
-
+import dotenv from 'dotenv';
+dotenv.config({});
 // --- AI Client (Gemini) ---
-const genAI = new GoogleGenerativeAI("AIzaSyDy2dYTvbAcdqkbsO7t-nJCMaLiIYlTdO0");
+const genAI = new GoogleGenerativeAI( process.env.GEMINI_API_KEY );
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // --- Online User Tracking ---

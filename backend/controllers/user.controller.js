@@ -9,8 +9,6 @@ import sendEmail from "../utils/sendEmail.js";
 import { OAuth2Client } from "google-auth-library";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-
 /**
  * @desc Register a new user
  * @route POST /api/user/register
@@ -179,7 +177,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Create reset url
-    const resetUrl = `http://localhost:5174/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
 
     const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please click the following link to reset your password: \n\n ${resetUrl}`;
 
