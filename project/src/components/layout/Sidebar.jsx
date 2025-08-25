@@ -39,7 +39,7 @@ const Sidebar = () => {
         {/* Logo */}
         <div className="flex items-center px-6 py-5 border-b border-gray-200">
           <Briefcase className="h-8 w-8 text-primary-900" />
-          <span className="ml-3 text-xl font-bold text-primary-900">SkillHire</span>
+          <span className="ml-3 text-xl font-bold text-primary-900">SkillSnap</span>
         </div>
 
         {/* Navigation */}

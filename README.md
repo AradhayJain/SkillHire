@@ -1,6 +1,6 @@
-# SkillHire
+# SkillSnap
 
-SkillHire is a [brief description of your project — e.g., "machine learning-based hiring assistance tool that evaluates candidate skills and matches them to job requirements."]
+SkillSnap is a [brief description of your project — e.g., "machine learning-based hiring assistance tool that evaluates candidate skills and matches them to job requirements."]
  
 ---
 

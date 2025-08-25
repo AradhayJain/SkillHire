@@ -18,12 +18,12 @@ const uploadOnCloudinary = async (localFilePath) => {
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",  // Detect file type automatically
       unique_filename: true,
-      folder: "Resumes_Skillhire" // 👈 this puts the file inside the folder
+      folder: "Resumes_SkillSnap" // 👈 this puts the file inside the folder
     });
     console.log("Cloudinary Upload Response:", response);
 
     fs.unlinkSync(localFilePath);
-    return response; // contains public_id like "resumes_skillhire/yourFileName"
+    return response; // contains public_id like "resumes_SkillSnap/yourFileName"
   } catch (error) {
     console.error("Cloudinary Upload Error:", error);
     if (fs.existsSync(localFilePath)) {

@@ -299,7 +299,7 @@ export const registerRequestOtp = asyncHandler(async (req, res) => {
   try {
       await sendEmail({
           email: user.email,
-          subject: 'Verify Your Email for SkillHire',
+          subject: 'Verify Your Email for SkillSnap',
           message: `Your verification code is: ${otp}\nIt will expire in 10 minutes.`
       });
       res.status(200).json({ success: true, message: 'Verification OTP sent to your email.' });

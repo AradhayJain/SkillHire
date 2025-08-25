@@ -95,7 +95,7 @@ const ResetPasswordPage = () => {
         <div className="text-center mb-8">
           <Link to="/" className="flex items-center justify-center space-x-2">
             <Briefcase className="h-10 w-10 text-blue-600" />
-            <span className="text-3xl font-bold text-blue-600">SkillHire</span>
+            <span className="text-3xl font-bold text-blue-600">SkillSnap</span>
           </Link>
           <h2 className="mt-6 text-3xl font-bold text-slate-900 dark:text-white">
             Reset Your Password

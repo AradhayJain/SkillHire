@@ -409,7 +409,7 @@ const Dashboard = () => {
         key={view}
         items={view === 'detail' ? detailSidebarItems : mainSidebarItems} 
         resumeId= {selectedResume ? selectedResume._id : null}
-        brandName={view === 'detail' && selectedResume ? selectedResume.ResumeTitle : "SkillHire"}
+        brandName={view === 'detail' && selectedResume ? selectedResume.ResumeTitle : "SkillSnap"}
         user={user}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}

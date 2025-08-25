@@ -47,7 +47,7 @@ SMTP_HOST=sandbox.smtp.mailtrap.io
 SMTP_PORT=2525
 SMTP_USER=your_mailtrap_username
 SMTP_PASS=your_mailtrap_password
-FROM_EMAIL=noreply@skillhire.com
-FROM_NAME=SkillHire Support
+FROM_EMAIL=noreply@SkillSnap.com
+FROM_NAME=SkillSnap Support
 
 */

@@ -59,7 +59,7 @@ const Navbar = ({ toggleTheme, currentTheme }) => {
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center space-x-2">
             <Upload className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-slate-800 dark:text-white">SkillHire</span>
+            <span className="text-2xl font-bold text-slate-800 dark:text-white">SkillSnap</span>
           </Link>
           <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500">Features</a>
@@ -139,7 +139,7 @@ const LandingPage = () => {
   ];
   
   const testimonials = [
-      { name: 'Sarah L.', role: 'UX Designer', quote: 'SkillHire\'s AI feedback was a game-changer. My resume went from getting no replies to landing interviews at top tech companies!', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100' },
+      { name: 'Sarah L.', role: 'UX Designer', quote: 'SkillSnap\'s AI feedback was a game-changer. My resume went from getting no replies to landing interviews at top tech companies!', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100' },
       { name: 'Mike R.', role: 'Software Engineer', quote: 'The community support is incredible. I got real-time advice from hiring managers that you just can\'t find anywhere else.', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100' },
       { name: 'Jessica P.', role: 'Marketing Manager', quote: 'I landed my dream job in three weeks. The platform not only improved my resume but also my confidence. Highly recommended!', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100' },
   ];
@@ -147,7 +147,7 @@ const LandingPage = () => {
   const faqs = [
       { question: 'How does the AI resume scoring work?', answer: 'Our AI analyzes your resume against thousands of data points from successful resumes in your industry. It checks for keywords, formatting, clarity, and impact, providing you with a score and actionable feedback to improve.' },
       { question: 'Is my personal data secure?', answer: 'Absolutely. We use industry-standard encryption for all data in transit and at rest. Your privacy and security are our top priorities. We will never share your personal information without your explicit consent.' },
-      { question: 'What makes SkillHire different from other job platforms?', answer: 'SkillHire is more than just a job board. We are a comprehensive career platform that combines AI technology with a supportive community. Our focus is on empowering you with the tools and knowledge to not just find a job, but to build a successful career.' },
+      { question: 'What makes SkillSnap different from other job platforms?', answer: 'SkillSnap is more than just a job board. We are a comprehensive career platform that combines AI technology with a supportive community. Our focus is on empowering you with the tools and knowledge to not just find a job, but to build a successful career.' },
       { question: 'Can I cancel my subscription at any time?', answer: 'Yes, you can cancel your Pro or Premium subscription at any time from your account dashboard. You will retain access to the features until the end of your current billing period.' },
   ];
   
@@ -364,7 +364,7 @@ const LandingPage = () => {
               <div className="md:col-span-2">
                 <div className="flex items-center space-x-2 mb-4">
                   <Upload className="h-8 w-8 text-blue-600" />
-                  <span className="text-xl font-bold">SkillHire</span>
+                  <span className="text-xl font-bold">SkillSnap</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 max-w-md mb-6">AI-powered resume optimization and job matching platform helping professionals land their dream careers.</p>
                 <div className="flex space-x-4">
@@ -392,7 +392,7 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-800 mt-12 pt-8 text-center text-slate-500 text-sm">
-              <p>&copy; 2025 SkillHire. All rights reserved. Made with ❤️ in Delhi, India.</p>
+              <p>&copy; 2025 SkillSnap. All rights reserved. Made with ❤️ in Delhi, India.</p>
             </div>
           </div>
         </footer>

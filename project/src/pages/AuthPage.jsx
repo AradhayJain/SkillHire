@@ -305,7 +305,7 @@ const AuthPage = ({ type }) => {
 
   const promoSlides = [
     { type: 'welcome', image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800', title: 'Join thousands of successful professionals', text: 'Our platform has helped over 50,000+ job seekers land their dream careers.' },
-    { type: 'testimonial', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', name: 'Sarah L.', role: 'UX Designer', quote: 'SkillHire\'s AI feedback was a game-changer for my resume!' },
+    { type: 'testimonial', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100', name: 'Sarah L.', role: 'UX Designer', quote: 'SkillSnap\'s AI feedback was a game-changer for my resume!' },
     { type: 'testimonial', avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100', name: 'Mike R.', role: 'Software Engineer', quote: 'The community support is incredible. I got real-time advice from hiring managers.' }
   ];
 
@@ -328,7 +328,7 @@ const AuthPage = ({ type }) => {
             <div className="text-center mb-8">
               <Link to="/" className="flex items-center justify-center space-x-2">
                 <Briefcase className="h-10 w-10 text-blue-600" />
-                <span className="text-3xl font-bold text-blue-600">SkillHire</span>
+                <span className="text-3xl font-bold text-blue-600">SkillSnap</span>
               </Link>
             </div>
 
