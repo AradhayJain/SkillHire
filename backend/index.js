@@ -42,6 +42,11 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get("/", (req, res) => {
+    res.send("API is running...");
+}
+);
+
 // --- API Routes ---
 app.use("/api/user", userRoutes);
 app.use("/api/resumes", resumeRoutes);

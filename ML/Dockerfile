@@ -1,5 +1,6 @@
 # Use slim Python base image
-FROM python:3.10-slim
+FROM python:3.10-slim-bullseye
+
 
 # System deps for PyMuPDF (fitz) and OpenCV
 RUN apt-get update && apt-get install -y \

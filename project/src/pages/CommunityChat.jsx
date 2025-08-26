@@ -8,7 +8,7 @@ import { useSocket } from '../contexts/SocketContext';
 
 // --- API Configuration ---
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 
 // --- Helper function to format date ---

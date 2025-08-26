@@ -55,4 +55,5 @@ services:
       SENDGRID_FROM_EMAIL : ${SENDGRID_FROM_EMAIL}
       GOOGLE_CLIENT_ID : ${GOOGLE_CLIENT_ID}
       FRONTEND_URL : ${FRONTEND_URL} 
+      BACKEND_ML : ${BACKEND_ML}
     restart: unless-stopped
