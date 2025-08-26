@@ -4,6 +4,8 @@ import uploadOnCloudinary, { deleteFromCloudinary } from "../utils/cloudinary.js
 import googleGenAi from "../utils/Gemini.js";
 import axios from "axios";
 import mongoose from "mongoose";
+import { v2 as cloudinary } from 'cloudinary';
+
 
 // --- CREATE: Upload a new resume and perform initial analysis ---
 export const uploadResume = asyncHandler(async (req, res) => {
@@ -19,6 +21,16 @@ export const uploadResume = asyncHandler(async (req, res) => {
         throw new Error("Resume file is required");
     }
     console.log(req.file.path)
+    console.log("Cloudinary Config:", cloudinary.config());
+    (async () => {
+        try {
+          const res = await cloudinary.api.ping();
+          console.log("Ping OK:", res);
+        } catch (err) {
+          console.error("Ping failed:", err);
+        }
+      })();
+
     const cloudinaryUpload = await uploadOnCloudinary(req.file.path);
 
     if (!cloudinaryUpload || !cloudinaryUpload.url) {

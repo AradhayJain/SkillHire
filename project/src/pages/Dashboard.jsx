@@ -300,6 +300,7 @@ const Dashboard = () => {
     formData.append('title', newResumeTitle);
     formData.append('resume', newResumeFile);
 
+    console.log(token)
     try {
         const response = await api.post('/resumes/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
