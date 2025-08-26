@@ -18,7 +18,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       // If a user is logged in (token exists), create a new socket connection
-      const newSocket = io('http://localhost:3000', { // Your server URL
+      const newSocket = io(import.meta.env.VITE_BACKEND_URL, { // Your server URL
         auth: {
           token: token, // The server middleware will use this to get the userId
         },

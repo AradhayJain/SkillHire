@@ -21,6 +21,9 @@ services:
     depends_on:
       - backend
       - ml
+    environment:
+      VITE_BACKEND_URL : ${VITE_BACKEND_URL}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
 
   backend:
@@ -51,4 +54,5 @@ services:
       SENDGRID_API_KEY : ${SENDGRID_API_KEY}
       SENDGRID_FROM_EMAIL : ${SENDGRID_FROM_EMAIL}
       GOOGLE_CLIENT_ID : ${GOOGLE_CLIENT_ID}
+      FRONTEND_URL : ${FRONTEND_URL} 
     restart: unless-stopped
