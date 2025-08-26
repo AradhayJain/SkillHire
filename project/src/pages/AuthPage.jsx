@@ -195,7 +195,8 @@ const AuthPage = ({ type }) => {
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID; 
-
+  const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
   useEffect(() => {
     setIsLogin(type === 'login');
     setError('');
@@ -209,18 +210,23 @@ const AuthPage = ({ type }) => {
   }, [isAuthenticated, authLoading, navigate]);
   
   const validateField = (name, value) => {
-      let error = '';
-      if (name === 'email' && !EMAIL_REGEX.test(value)) {
-          error = 'Please enter a valid email address.';
-      }
-      if (name === 'password' && !isLogin && !PASSWORD_REGEX.test(value)) {
-          error = 'Password must be 8+ characters with uppercase, lowercase, and a number.';
-      }
-      if (name === 'confirmPassword' && !isLogin && value !== formData.password) {
-          error = 'Passwords do not match.';
-      }
-      setFormErrors(prev => ({ ...prev, [name]: error }));
+    let error = '';
+  
+    if (name === 'email' && !EMAIL_REGEX.test(value)) {
+      error = 'Please enter a valid email address.';
+    }
+  
+    if (name === 'password' && !isLogin && !PASSWORD_REGEX.test(value)) {
+      error = 'Password must be 8+ characters, include uppercase, lowercase, and a number.';
+    }
+  
+    if (name === 'confirmPassword' && !isLogin && value !== formData.password) {
+      error = 'Passwords do not match.';
+    }
+  
+    setFormErrors(prev => ({ ...prev, [name]: error }));
   };
+  
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;

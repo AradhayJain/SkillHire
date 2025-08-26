@@ -108,3 +108,76 @@ export const getPosts = asyncHandler(async (req, res) => {
         currentPage: Number(page)
     });
 });
+
+
+export const upvotePost = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      const post = await CommunityPost.findByIdAndUpdate(
+        id,
+        { $inc: { upvotes: 1 } },
+        { new: true }
+      );
+  
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+  
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
+  
+  // Downvote a post
+  export const downvotePost = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      const post = await CommunityPost.findByIdAndUpdate(
+        id,
+        { $inc: { downvotes: 1 } },
+        { new: true }
+      );
+  
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+  
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
+
+  export const votePost = async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const { type } = req.body; // "up" or "down"
+  
+      const post = await CommunityPost.findById(postId);
+      if (!post) return res.status(404).json({ message: "Post not found" });
+  
+      if (type === "up") {
+        post.upvotes += 1;
+      } else if (type === "down") {
+        post.downvotes += 1;
+      } else {
+        return res.status(400).json({ message: "Invalid vote type" });
+      }
+  
+      await post.save();
+  
+      res.json({
+        message: "Vote recorded",
+        post: {
+          _id: post._id,
+          upvotes: post.upvotes,
+          downvotes: post.downvotes,
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };

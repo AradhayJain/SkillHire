@@ -300,7 +300,7 @@ const Dashboard = () => {
     formData.append('title', newResumeTitle);
     formData.append('resume', newResumeFile);
 
-    console.log(token)
+    // console.log(token)
     try {
         const response = await api.post('/resumes/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
@@ -368,7 +368,7 @@ const Dashboard = () => {
   };
 
   const handleSelectResume = (resume) => {
-    console.log(resume)
+    // console.log(resume)
     setSelectedResume(resume);
     setUpdatedTitle(resume.ResumeTitle);
     setUpdatedFile(null);
