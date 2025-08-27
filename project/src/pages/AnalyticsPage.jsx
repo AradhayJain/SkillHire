@@ -40,7 +40,7 @@ import axios from 'axios';
 
 // --- API Configuration ---
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f97316', '#6b7280'];
 

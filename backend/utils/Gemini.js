@@ -1,7 +1,10 @@
 
 import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv"
 
-const ai = new GoogleGenAI({ apiKey: "AIzaSyDy2dYTvbAcdqkbsO7t-nJCMaLiIYlTdO0" }); // Use environment variable for safety
+dotenv.config({});
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); // Use environment variable for safety
 
 async function googleGenAi(prompt) {
   const response = await ai.models.generateContent({

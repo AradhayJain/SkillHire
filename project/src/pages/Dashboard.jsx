@@ -27,7 +27,7 @@ import axios from 'axios';
 
 // --- API Configuration ---
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 
 // --- Custom Hook for Theme Management ---
@@ -300,6 +300,7 @@ const Dashboard = () => {
     formData.append('title', newResumeTitle);
     formData.append('resume', newResumeFile);
 
+    // console.log(token)
     try {
         const response = await api.post('/resumes/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
@@ -367,7 +368,7 @@ const Dashboard = () => {
   };
 
   const handleSelectResume = (resume) => {
-    console.log(resume)
+    // console.log(resume)
     setSelectedResume(resume);
     setUpdatedTitle(resume.ResumeTitle);
     setUpdatedFile(null);

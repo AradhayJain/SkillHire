@@ -79,7 +79,7 @@ const OtpModal = ({ email, onClose, onVerifySuccess }) => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://localhost:3000/api/user/register-verify-otp', {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/register-verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp })
@@ -134,7 +134,7 @@ const ForgotPasswordModal = ({ onClose, onLinkSent }) => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('http://localhost:3000/api/user/forgot-password', {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -194,8 +194,9 @@ const AuthPage = ({ type }) => {
 
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
-  const GOOGLE_CLIENT_ID = "675666752184-6r6c5369l793km40f299gelrmnknd928.apps.googleusercontent.com";
-
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID; 
+  const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
   useEffect(() => {
     setIsLogin(type === 'login');
     setError('');
@@ -209,18 +210,23 @@ const AuthPage = ({ type }) => {
   }, [isAuthenticated, authLoading, navigate]);
   
   const validateField = (name, value) => {
-      let error = '';
-      if (name === 'email' && !EMAIL_REGEX.test(value)) {
-          error = 'Please enter a valid email address.';
-      }
-      if (name === 'password' && !isLogin && !PASSWORD_REGEX.test(value)) {
-          error = 'Password must be 8+ characters with uppercase, lowercase, and a number.';
-      }
-      if (name === 'confirmPassword' && !isLogin && value !== formData.password) {
-          error = 'Passwords do not match.';
-      }
-      setFormErrors(prev => ({ ...prev, [name]: error }));
+    let error = '';
+  
+    if (name === 'email' && !EMAIL_REGEX.test(value)) {
+      error = 'Please enter a valid email address.';
+    }
+  
+    if (name === 'password' && !isLogin && !PASSWORD_REGEX.test(value)) {
+      error = 'Password must be 8+ characters, include uppercase, lowercase, and a number.';
+    }
+  
+    if (name === 'confirmPassword' && !isLogin && value !== formData.password) {
+      error = 'Passwords do not match.';
+    }
+  
+    setFormErrors(prev => ({ ...prev, [name]: error }));
   };
+  
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
@@ -238,7 +244,7 @@ const AuthPage = ({ type }) => {
     try {
       if (isLogin) {
         // --- Standard LOGIN LOGIC ---
-        const res = await fetch('http://localhost:3000/api/user/login', {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, password: formData.password })
@@ -252,7 +258,7 @@ const AuthPage = ({ type }) => {
         const data = new FormData();
         Object.keys(formData).forEach(key => data.append(key, formData[key]));
         
-        const res = await fetch('http://localhost:3000/api/user/register-request-otp', { method: 'POST', body: data });
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/register-request-otp`, { method: 'POST', body: data });
         if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
         
         setAuthStep('otp');
@@ -273,7 +279,7 @@ const AuthPage = ({ type }) => {
     setError('');
     try {
         const token = credentialResponse.credential;
-        const res = await fetch('http://localhost:3000/api/user/google-auth', {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/google-auth`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token })

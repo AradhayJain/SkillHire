@@ -29,7 +29,7 @@ import axios from 'axios';
 
 // --- API Configuration ---
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 
 // --- Custom Hook for Theme Management ---
@@ -64,68 +64,139 @@ const getThumbnailUrl = (cloudinaryPath) => {
 
 
 // --- Reusable Components ---
-const PostCard = ({ post, onVote, onSave }) => {
-    const thumbnailUrl = post.resumeId ? getThumbnailUrl(post.resumeId.cloudinaryPath) : null;
-    const [isSaved, setIsSaved] = useState(false); // Local state for immediate UI feedback
+const PostCard = ({ post, onVote, onSave, isSaved }) => {
+  const thumbnailUrl = post.resumeId
+    ? getThumbnailUrl(post.resumeId.cloudinaryPath)
+    : null;
+  useEffect(() => {
+    // console.log(isSaved);
+  }, [post]);
+  const handleSaveClick = (e) => {
+    e.stopPropagation(); // Prevent navigating if wrapped in a link
+    onSave(post._id);
+  };
 
-    const handleSaveClick = (e) => {
-        e.stopPropagation(); // Prevent any parent link clicks
-        setIsSaved(!isSaved);
-        onSave(post._id);
-    };
+  const netScore = (post.upvotes || 0) - (post.downvotes || 0);
 
-    return (
-      <Card className="flex gap-4 p-4 mb-4 dark:bg-slate-800">
-        <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-700/50 p-2 rounded-lg flex-shrink-0">
-          <button onClick={() => onVote(post._id, 'up')} className={`p-1 rounded ${post.userVote === 'up' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-            <ArrowUp size={18} />
-          </button>
-          <span className="text-sm font-bold my-1 text-slate-800 dark:text-slate-200">{post.likes?.length || 0}</span>
-          <button onClick={() => onVote(post._id, 'down')} className={`p-1 rounded ${post.userVote === 'down' ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
-            <ArrowDown size={18} />
+  return (
+    <Card className="flex gap-4 p-4 mb-4 dark:bg-slate-800">
+      {/* Vote buttons */}
+      <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-700/50 p-2 rounded-lg flex-shrink-0">
+        <button
+          onClick={() => onVote(post._id, "up")}
+          className={`p-1 rounded ${
+            post.userVote === "up"
+              ? "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+              : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600"
+          }`}
+        >
+          <ArrowUp size={18} />
+        </button>
+        <span className="text-sm font-bold my-1 text-slate-800 dark:text-slate-200">
+          {netScore}
+        </span>
+        <button
+          onClick={() => onVote(post._id, "down")}
+          className={`p-1 rounded ${
+            post.userVote === "down"
+              ? "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+              : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600"
+          }`}
+        >
+          <ArrowDown size={18} />
+        </button>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center space-x-3">
+            <img
+              src={post.userId?.pic}
+              alt={post.userId?.name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Posted by{" "}
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {post.userId?.name}
+              </span>{" "}
+              • {new Date(post.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+
+          {/* Save button */}
+          <button
+            onClick={handleSaveClick}
+            className={`p-2 rounded-full transition-colors ${
+              isSaved
+                ? "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+                : "text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+            }`}
+          >
+            <Bookmark size={16} className={isSaved ? "fill-current" : ""} />
           </button>
         </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center space-x-3">
-                <img src={post.userId?.pic} alt={post.userId?.name} className="w-8 h-8 rounded-full object-cover"/>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Posted by <span className="font-medium text-slate-700 dark:text-slate-300">{post.userId?.name}</span> • {new Date(post.createdAt).toLocaleDateString()}</p>
+
+        {/* Post description */}
+        <p className="text-slate-600 dark:text-slate-300 text-sm mb-3">
+          {post.description}
+        </p>
+
+        {/* Post image */}
+        {post.image && (
+          <img
+            src={post.image}
+            alt="Post content"
+            className="rounded-lg border dark:border-slate-700 max-h-72 w-auto my-2"
+          />
+        )}
+
+        {/* Resume attachment */}
+        {post.resumeId && (
+          <a
+            href={post.resumeId.cloudinaryPath}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="my-2 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg flex items-center gap-4 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            <div className="w-16 h-20 bg-slate-200 dark:bg-slate-600 rounded-md flex-shrink-0 overflow-hidden">
+              {thumbnailUrl ? (
+                <img
+                  src={thumbnailUrl}
+                  alt="Resume preview"
+                  className="w-full h-full object-cover object-top"
+                />
+              ) : (
+                <FileText className="w-full h-full text-slate-400 p-4" />
+              )}
             </div>
-            <button onClick={handleSaveClick} className={`p-2 rounded-full transition-colors ${isSaved ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                <Bookmark size={16} className={isSaved ? 'fill-current' : ''} />
-            </button>
-          </div>
-          
-          <p className="text-slate-600 dark:text-slate-300 text-sm mb-3">{post.description}</p>
-          
-          {post.image && <img src={post.image} alt="Post content" className="rounded-lg border dark:border-slate-700 max-h-72 w-auto my-2" />}
-          
-          {post.resumeId && (
-            <a href={post.resumeId.cloudinaryPath} target="_blank" rel="noopener noreferrer" className="my-2 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg flex items-center gap-4 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                <div className="w-16 h-20 bg-slate-200 dark:bg-slate-600 rounded-md flex-shrink-0 overflow-hidden">
-                    {thumbnailUrl ? (
-                        <img src={thumbnailUrl} alt="Resume preview" className="w-full h-full object-cover object-top" />
-                    ) : (
-                        <FileText className="w-full h-full text-slate-400 p-4" />
-                    )}
-                </div>
-                <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{post.resumeId.ResumeTitle}</p>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-indigo-600 dark:text-indigo-400">
-                        <Target size={14} />
-                        <span>{post.resumeId.atsScore}% ATS Score</span>
-                    </div>
-                </div>
-            </a>
-          )}
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                {post.resumeId.ResumeTitle}
+              </p>
+              <div className="flex items-center gap-2 mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+                <Target size={14} />
+                <span>{post.resumeId.atsScore}% ATS Score</span>
+              </div>
+            </div>
+          </a>
+        )}
 
-          <div className="flex flex-wrap gap-2 mt-3">
-            {post.tags.map((tag) => <Badge key={tag} variant="outline" size="sm">{tag}</Badge>)}
-          </div>
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mt-3">
+          {post.tags.map((tag) => (
+            <Badge key={tag} variant="outline" size="sm">
+              {tag}
+            </Badge>
+          ))}
         </div>
-      </Card>
-    );
+      </div>
+    </Card>
+  );
 };
+
 
 const UserProfileCard = ({ user, onConnect }) => (
     <Card className="p-5 text-center transition-all hover:shadow-xl hover:-translate-y-1 dark:bg-slate-800">
@@ -146,7 +217,7 @@ const CommunityPage = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [postSearch, setPostSearch] = useState('');
   const [peopleSearch, setPeopleSearch] = useState('');
-  const [filters, setFilters] = useState({ tags: 'all', sort: 'newest', author: null });
+  const [filters, setFilters] = useState({ tags: 'all', sort: 'newest', author: null,savedPosts:null });
   const navigate = useNavigate();
   const [theme, toggleTheme] = useTheme();
   const { user, token } = useAuth();
@@ -156,6 +227,11 @@ const CommunityPage = () => {
   const [userResumes, setUserResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [allPosts, setAllPosts] = useState([]);
+
+
+
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -166,11 +242,13 @@ const CommunityPage = () => {
         if (filters.tags && filters.tags !== 'all') params.append('tags', filters.tags);
         if (filters.sort) params.append('sort', filters.sort);
         if (filters.author) params.append('author', filters.author); // Add author to query
+        if(filters.savedPosts) params.append('savedPosts',savedPosts);
         
         const { data } = await api.get(`/post/?${params.toString()}`,{
             headers: { Authorization: `Bearer ${token}` }
         });
         setPosts(data.posts);
+        setAllPosts(data.posts);
       } catch (err) {
         setError("Failed to fetch posts. Please try again later.");
       } finally {
@@ -239,12 +317,109 @@ const CommunityPage = () => {
       return false;
     }
   };
+  const handleVote = (postId, type) => {
+    setPosts(prev =>
+      prev.map(p => {
+        if (p._id !== postId) return p;
+  
+        let newUpvotes = p.upvotes;
+        let newDownvotes = p.downvotes;
+  
+        if (type === "up") newUpvotes++;
+        if (type === "down") newDownvotes++;
+        if(newUpvotes-newDownvotes<0){
+          newUpvotes=0;
+          newDownvotes=0;
+        }
+  
+        return { ...p, upvotes: newUpvotes, downvotes: newDownvotes, userVote: type };
+      })
+    );
+  
+    
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/post/${postId}/vote`, {
+      method: "POST",
+      
+      headers: { "Content-Type": "application/json",Authorization: `Bearer ${token}`},
+      body: JSON.stringify({ type }),
+    }).catch(err => console.error(err));
+  };
+const [filterCategories, setFilterCategories] = useState([
+  { key: 'all', label: 'All Posts' },
+]);
 
-  const handleSavePost = (postId) => {
-    console.log(`Saving post with ID: ${postId}`);
+const handleTopCategories = async () => {
+  try {
+    const { data } = await api.get('/post/top-tags');
+    if (data) {
+      // console.log(data);
+
+      const topCategories = data.map(tag => ({
+        key: tag._id,
+        label: tag._id,   // you can also include count if needed
+      }));
+
+      setFilterCategories(prev => [...prev, ...topCategories]);
+    }
+  } catch (err) {
+    console.error("Error fetching top categories:", err);
+  }
+};
+
+useEffect(() => {
+  handleTopCategories();
+}, []);
+
+  
+  
+useEffect(() => {
+  const fetchSavedPosts = async () => {
+    try {
+      const { data } = await api.get('/post/saved', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // backend should return { savedPosts: [{_id: "123"}, {_id:"456"}] }
+      if(data.length===0){
+        // console.log(data)
+        setSavedPosts([]);
+      }
+      else{
+        // console.log(data)
+        setSavedPosts(data?.map(p => p.postId._id) || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch saved posts:", err);
+    }
   };
 
-  const filteredUsers = users.filter(u => u.name.toLowerCase().includes(peopleSearch.toLowerCase()) || u.Role.toLowerCase().includes(peopleSearch.toLowerCase()));
+  if (token) fetchSavedPosts();
+}, [token]);
+
+const handleSavePost = async (postId) => {
+  try {
+    const { data } = await api.post(`/post/save/${postId}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (data.saved) {
+      // ensure no duplicate IDs
+      // console.log(data)
+      setSavedPosts(prev => prev.includes(postId) ? prev : [...prev, postId]);
+    } else {
+      setSavedPosts(prev => prev.filter(id => id !== postId));
+    }
+  } catch (err) {
+    console.error("Error saving post:", err);
+  }
+};
+
+  const filteredUsers = users.filter(user => { const search = peopleSearch.toLowerCase(); return ( user.name.toLowerCase().includes(search) || user.role?.toLowerCase().includes(search) || user.company?.toLowerCase().includes(search) ); });
+  const filteredPosts = posts.filter(p =>
+    p.description?.toLowerCase().includes(postSearch.toLowerCase()) ||
+    p.userId?.name?.toLowerCase().includes(postSearch.toLowerCase()) ||
+    p.tags?.some(tag => tag.toLowerCase().includes(postSearch.toLowerCase()))
+  );
+  
 
   const handleConnect = async (otherUserId) => {
     // Ensure the user is authenticated
@@ -298,12 +473,6 @@ const CommunityPage = () => {
     </button>
   );
 
-  const filterCategories = [
-      { key: 'all', label: 'All Posts' },
-      { key: 'Template', label: 'Templates' },
-      { key: 'Review', label: 'Reviews' },
-      { key: 'Tips', label: 'Tips & Tricks' },
-  ];
 
   const sortOptions = [
       { key: 'newest', label: 'Newest First' },
@@ -360,7 +529,17 @@ const CommunityPage = () => {
                         <h3 className="font-semibold mb-3 text-slate-800 dark:text-white">My Activity</h3>
                         <nav className="space-y-2">
                             <button onClick={() => setFilters(f => ({...f, author: user._id}))} className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><FileText size={16}/> My Posts</button>
-                            <button className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><Bookmark size={16}/> Saved Posts</button>
+                            <button 
+  onClick={() => {
+    // console.log(savedPosts);
+    setFilters(f => ({ ...f, author: null, savedPosts: savedPosts })); 
+  }} 
+  className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+>
+  <Bookmark size={16}/> Saved Posts
+</button>
+
+
                         </nav>
                     </Card>
                 </aside>
@@ -374,9 +553,28 @@ const CommunityPage = () => {
                         </div>
                         <Button variant="outline" onClick={() => setIsFilterModalOpen(true)}><Filter size={16}/></Button>
                     </div>
-                    {loading ? <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-blue-600" size={40}/></div> : 
-                     error ? <p className="text-center text-red-500">{error}</p> :
-                     posts.map(post => <PostCard key={post._id} post={post} onVote={() => {}} onSave={handleSavePost} />)}
+                    {loading ? (
+  <div className="flex justify-center items-center h-64">
+    <Loader2 className="animate-spin text-blue-600" size={40} />
+  </div>
+) : error ? (
+  <p className="text-center text-red-500">{error}</p>
+) : filteredPosts.length === 0 ? (
+  <p className="text-center text-slate-500">No posts found.</p>
+) : (
+  filteredPosts.map(post => {
+    // console.log(savedPosts)
+    return (
+    <PostCard
+  key={post._id}
+  post={post}
+  onVote={handleVote}
+  onSave={handleSavePost}
+  isSaved={savedPosts.includes(post._id)}
+/>)
+})
+)}
+
                 </main>
 
                 <aside className="hidden lg:block space-y-6">
@@ -416,19 +614,36 @@ const CommunityPage = () => {
             )}
             
             {activeTab === 'people' && (
-                <div>
-                    <div className="relative max-w-lg mx-auto mb-8">
-                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="text" placeholder="Search by name, role, or company..." value={peopleSearch} onChange={(e) => setPeopleSearch(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-full focus:ring-2 focus:ring-blue-500" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {loading ? <div className="col-span-full flex justify-center items-center h-64"><Loader2 className="animate-spin text-blue-600" size={40}/></div> : 
-                         error ? <p className="col-span-full text-center text-red-500">{error}</p> :
-                         filteredUsers.map(user => <UserProfileCard key={user._id} user={user} onConnect={handleConnect} />)}
-                    </div>
-                </div>
-            )}
+  <div>
+    <div className="relative max-w-lg mx-auto mb-8">
+      <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+      <input
+        type="text"
+        placeholder="Search by name, role, or company..."
+        value={peopleSearch}
+        onChange={(e) => setPeopleSearch(e.target.value)}
+        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-full focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {loading ? (
+        <div className="col-span-full flex justify-center items-center h-64">
+          <Loader2 className="animate-spin text-blue-600" size={40}/>
+        </div>
+      ) : error ? (
+        <p className="col-span-full text-center text-red-500">{error}</p>
+      ) : filteredUsers.length > 0 ? (
+        filteredUsers.map(user => (
+          <UserProfileCard key={user._id} user={user} onConnect={handleConnect} />
+        ))
+      ) : (
+        <p className="col-span-full text-center text-gray-500">No users found</p>
+      )}
+    </div>
+  </div>
+)}
+
           </motion.div>
         </AnimatePresence>
       </div>

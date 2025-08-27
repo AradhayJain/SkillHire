@@ -4,6 +4,8 @@ import uploadOnCloudinary, { deleteFromCloudinary } from "../utils/cloudinary.js
 import googleGenAi from "../utils/Gemini.js";
 import axios from "axios";
 import mongoose from "mongoose";
+import { v2 as cloudinary } from 'cloudinary';
+
 
 // --- CREATE: Upload a new resume and perform initial analysis ---
 export const uploadResume = asyncHandler(async (req, res) => {
@@ -18,6 +20,16 @@ export const uploadResume = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error("Resume file is required");
     }
+    console.log(req.file.path)
+    console.log("Cloudinary Config:", cloudinary.config());
+    (async () => {
+        try {
+          const res = await cloudinary.api.ping();
+          console.log("Ping OK:", res);
+        } catch (err) {
+          console.error("Ping failed:", err);
+        }
+      })();
 
     const cloudinaryUpload = await uploadOnCloudinary(req.file.path);
 
@@ -31,7 +43,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
     let atsScore = 0;
     try {
         // Call the single Flask service endpoint
-        const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_details", { 
+        const flaskResponse = await axios.post(`${process.env.BACKEND_ML}/extract_details`, { 
             pdf_url: cloudinaryUpload.url 
         });
 
@@ -141,17 +153,46 @@ export const updateResume = asyncHandler(async (req, res) => {
             res.status(500);
             throw new Error("Failed to upload the new resume file.");
         }
-        
+        let analyticsData = {};
         resume.cloudinaryPath = newUpload.url;
         
         // --- Re-run full analysis when a new file is uploaded ---
         try {
-            const flaskResponse = await axios.post("http://127.0.0.1:5000/extract_one", { 
+            const flaskResponse = await axios.post(`${process.env.BACKEND_ML}/extract_details`, { 
                 pdf_url: newUpload.url 
             });
+            analyticsData = flaskResponse.data || {};
+            const extracted_text = analyticsData.extracted_text || "";
+    const input_prompt = `
+You are an advanced and highly experienced Applicant Tracking System (ATS) specializing in tech roles such as Software Engineering, Data Science, Data Analysis, Big Data Engineering, AI/ML Engineering, and Cloud Engineering. 
+
+Your job is to **evaluate resumes** with precision, providing measurable insights aligned with current industry standards.
+
+Instructions:
+- Read the resume carefully.  
+- Respond ONLY in **valid JSON**.  
+- Do NOT include markdown formatting, code fences, or explanations.  
+- Output MUST be plain JSON that matches the schema exactly.  
+
+Schema:
+{
+  "General_ATS_Score": "Number (1-100)",
+  "Application_Success_Rate": "Number (1-100)"
+}
+
+Resume Text:
+${extracted_text}
+`
+
+
+
+const atsInsights = await googleGenAi(input_prompt);
+console.log("ATS Score:", atsInsights.General_ATS_Score);
+console.log("Application Success Rate:", atsInsights.Application_Success_Rate);
+console.log("Suggestions:", atsInsights.Personalized_Suggestions);
             
             resume.analyticsData = flaskResponse.data;
-            resume.atsScore = flaskResponse.data?.ats_result?.ats_score || 0;
+            resume.atsScore = atsInsights.General_ATS_Score || 0;
             resume.ResumeString = flaskResponse.data.extracted_text || resume.ResumeString;
             resume.ResumeCategory = flaskResponse.data.predicted_label || resume.ResumeCategory;
             console.log("Resume updated with new file and analysis:", {

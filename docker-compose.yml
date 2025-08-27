@@ -1,0 +1,59 @@
+# docker-compose.yml (Simple Correction)
+
+services:
+  ml:
+    build:
+      context: ./ML
+    ports:
+      - "5000:5000"
+    depends_on:
+      - backend
+    environment:
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./project
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+      - ml
+    environment:
+      VITE_BACKEND_URL : ${VITE_BACKEND_URL}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      PORT : ${PORT}
+      RAPID_KEY : ${RAPID_KEY}
+      RAPID_HOST : ${RAPID_HOST}
+      MONGO_PASSWORD : ${MONGO_PASSWORD}
+      MONGO_URI : ${MONGO_URI}
+      CLOUDINARY_CLOUD_NAME : ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY : ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET : ${CLOUDINARY_API_SECRET}
+      GEMINI_API_KEY : ${GEMINI_API_KEY}
+      SUPPORT_EMAIL : ${SUPPORT_EMAIL}
+      SUPPORT_EMAIL_PASSWORD : ${SUPPORT_EMAIL_PASSWORD}
+      SECRET_KEY : ${SECRET_KEY}
+      SMTP_HOST : ${SMTP_HOST}
+      SMTP_PORT : ${SMTP_PORT}
+      SMTP_USER : ${SMTP_USER}
+      SMTP_PASS : ${SMTP_PASS}
+      FROM_EMAIL : ${FROM_EMAIL}
+      FROM_NAME : ${FROM_NAME}
+      SENDGRID_API_KEY : ${SENDGRID_API_KEY}
+      SENDGRID_FROM_EMAIL : ${SENDGRID_FROM_EMAIL}
+      GOOGLE_CLIENT_ID : ${GOOGLE_CLIENT_ID}
+      FRONTEND_URL : ${FRONTEND_URL} 
+      BACKEND_ML : ${BACKEND_ML}
+    restart: unless-stopped

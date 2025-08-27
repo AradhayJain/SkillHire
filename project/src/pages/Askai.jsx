@@ -9,7 +9,7 @@ import ReactMarkdown from 'react-markdown'; // <-- 1. IMPORT THE LIBRARY
 
 // --- API Configuration ---
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 
 // --- Custom Hook for Theme Management ---
@@ -86,7 +86,7 @@ const AskAiPage = () => {
 useEffect(() => {
   if (!token) return; // Don't connect if there's no token
 
-  socketRef.current = io('http://localhost:3000', {
+  socketRef.current = io(import.meta.env.VITE_BACKEND_URL, {
       auth: { token }
   });
 

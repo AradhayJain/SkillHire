@@ -19,7 +19,7 @@ import axios from 'axios';
    API CONFIG
 ========================= */
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 
 /* =========================
@@ -289,7 +289,7 @@ const JobsPage = () => {
   useEffect(() => {
       const fetchResume = async () => {
 
-        console.log(resumeId)
+        //console.log(resumeId)
         if (!token || !resumeId) return;
         try {
           
@@ -299,10 +299,10 @@ const JobsPage = () => {
           if (data.success) {
             setResume(data.resume);
             // Set search query based on resume's bert_result
-            console.log(data)
+            // console.log(data)
 
             const query = data?.resume?.analyticsData.bert_result?.predicted_label;
-            console.log(query)
+            // console.log(query)
             setSearchQuery(query || 'Software Developer in India');
 
           } else {
