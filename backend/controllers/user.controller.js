@@ -191,7 +191,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
         });
       
        console.log("Password Reset URL (for testing):", resetUrl); // For development
-       console.log(user)
+      //  console.log(user)
 
       res.status(200).json({ success: true, data: 'Email sent' });
     } catch (err) {
@@ -291,7 +291,7 @@ export const registerRequestOtp = asyncHandler(async (req, res) => {
   }
   
   await user.save();
-  console.log(user)
+  // console.log(user)
 
   // Send OTP email
   try {

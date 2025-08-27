@@ -64,17 +64,19 @@ const getThumbnailUrl = (cloudinaryPath) => {
 
 
 // --- Reusable Components ---
-const PostCard = ({ post, onVote, onSave }) => {
-    const thumbnailUrl = post.resumeId ? getThumbnailUrl(post.resumeId.cloudinaryPath) : null;
-    const [isSaved, setIsSaved] = useState(false); // Local state for immediate UI feedback
+const PostCard = ({ post, onVote, onSave, isSaved }) => {
+  const thumbnailUrl = post.resumeId
+    ? getThumbnailUrl(post.resumeId.cloudinaryPath)
+    : null;
+  useEffect(() => {
+    // console.log(isSaved);
+  }, [post]);
+  const handleSaveClick = (e) => {
+    e.stopPropagation(); // Prevent navigating if wrapped in a link
+    onSave(post._id);
+  };
 
-    const handleSaveClick = (e) => {
-        e.stopPropagation(); // Prevent any parent link clicks
-        setIsSaved(!isSaved);
-        onSave(post._id);
-    };
-
-    const netScore = (post.upvotes || 0) - (post.downvotes || 0);
+  const netScore = (post.upvotes || 0) - (post.downvotes || 0);
 
   return (
     <Card className="flex gap-4 p-4 mb-4 dark:bg-slate-800">
@@ -195,6 +197,7 @@ const PostCard = ({ post, onVote, onSave }) => {
   );
 };
 
+
 const UserProfileCard = ({ user, onConnect }) => (
     <Card className="p-5 text-center transition-all hover:shadow-xl hover:-translate-y-1 dark:bg-slate-800">
         <img src={user.pic} alt={user.name} className="w-24 h-24 rounded-full object-cover mb-4 mx-auto border-4 border-white dark:border-slate-700 shadow-lg"/>
@@ -214,7 +217,7 @@ const CommunityPage = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [postSearch, setPostSearch] = useState('');
   const [peopleSearch, setPeopleSearch] = useState('');
-  const [filters, setFilters] = useState({ tags: 'all', sort: 'newest', author: null });
+  const [filters, setFilters] = useState({ tags: 'all', sort: 'newest', author: null,savedPosts:null });
   const navigate = useNavigate();
   const [theme, toggleTheme] = useTheme();
   const { user, token } = useAuth();
@@ -224,6 +227,10 @@ const CommunityPage = () => {
   const [userResumes, setUserResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [allPosts, setAllPosts] = useState([]);
+
+
 
 
   useEffect(() => {
@@ -235,11 +242,13 @@ const CommunityPage = () => {
         if (filters.tags && filters.tags !== 'all') params.append('tags', filters.tags);
         if (filters.sort) params.append('sort', filters.sort);
         if (filters.author) params.append('author', filters.author); // Add author to query
+        if(filters.savedPosts) params.append('savedPosts',savedPosts);
         
         const { data } = await api.get(`/post/?${params.toString()}`,{
             headers: { Authorization: `Bearer ${token}` }
         });
         setPosts(data.posts);
+        setAllPosts(data.posts);
       } catch (err) {
         setError("Failed to fetch posts. Please try again later.");
       } finally {
@@ -318,12 +327,16 @@ const CommunityPage = () => {
   
         if (type === "up") newUpvotes++;
         if (type === "down") newDownvotes++;
+        if(newUpvotes-newDownvotes<0){
+          newUpvotes=0;
+          newDownvotes=0;
+        }
   
         return { ...p, upvotes: newUpvotes, downvotes: newDownvotes, userVote: type };
       })
     );
   
-    // Call backend
+    
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/post/${postId}/vote`, {
       method: "POST",
       
@@ -331,13 +344,75 @@ const CommunityPage = () => {
       body: JSON.stringify({ type }),
     }).catch(err => console.error(err));
   };
-  
-  
-  
+const [filterCategories, setFilterCategories] = useState([
+  { key: 'all', label: 'All Posts' },
+]);
 
-  const handleSavePost = (postId) => {
-    console.log(`Saving post with ID: ${postId}`);
+const handleTopCategories = async () => {
+  try {
+    const { data } = await api.get('/post/top-tags');
+    if (data) {
+      // console.log(data);
+
+      const topCategories = data.map(tag => ({
+        key: tag._id,
+        label: tag._id,   // you can also include count if needed
+      }));
+
+      setFilterCategories(prev => [...prev, ...topCategories]);
+    }
+  } catch (err) {
+    console.error("Error fetching top categories:", err);
+  }
+};
+
+useEffect(() => {
+  handleTopCategories();
+}, []);
+
+  
+  
+useEffect(() => {
+  const fetchSavedPosts = async () => {
+    try {
+      const { data } = await api.get('/post/saved', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // backend should return { savedPosts: [{_id: "123"}, {_id:"456"}] }
+      if(data.length===0){
+        // console.log(data)
+        setSavedPosts([]);
+      }
+      else{
+        // console.log(data)
+        setSavedPosts(data?.map(p => p.postId._id) || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch saved posts:", err);
+    }
   };
+
+  if (token) fetchSavedPosts();
+}, [token]);
+
+const handleSavePost = async (postId) => {
+  try {
+    const { data } = await api.post(`/post/save/${postId}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (data.saved) {
+      // ensure no duplicate IDs
+      // console.log(data)
+      setSavedPosts(prev => prev.includes(postId) ? prev : [...prev, postId]);
+    } else {
+      setSavedPosts(prev => prev.filter(id => id !== postId));
+    }
+  } catch (err) {
+    console.error("Error saving post:", err);
+  }
+};
+
   const filteredUsers = users.filter(user => { const search = peopleSearch.toLowerCase(); return ( user.name.toLowerCase().includes(search) || user.role?.toLowerCase().includes(search) || user.company?.toLowerCase().includes(search) ); });
   const filteredPosts = posts.filter(p =>
     p.description?.toLowerCase().includes(postSearch.toLowerCase()) ||
@@ -398,12 +473,6 @@ const CommunityPage = () => {
     </button>
   );
 
-  const filterCategories = [
-      { key: 'all', label: 'All Posts' },
-      { key: 'Template', label: 'Templates' },
-      { key: 'Review', label: 'Reviews' },
-      { key: 'Tips', label: 'Tips & Tricks' },
-  ];
 
   const sortOptions = [
       { key: 'newest', label: 'Newest First' },
@@ -460,7 +529,17 @@ const CommunityPage = () => {
                         <h3 className="font-semibold mb-3 text-slate-800 dark:text-white">My Activity</h3>
                         <nav className="space-y-2">
                             <button onClick={() => setFilters(f => ({...f, author: user._id}))} className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><FileText size={16}/> My Posts</button>
-                            <button className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"><Bookmark size={16}/> Saved Posts</button>
+                            <button 
+  onClick={() => {
+    // console.log(savedPosts);
+    setFilters(f => ({ ...f, author: null, savedPosts: savedPosts })); 
+  }} 
+  className="w-full flex items-center gap-3 p-2 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+>
+  <Bookmark size={16}/> Saved Posts
+</button>
+
+
                         </nav>
                     </Card>
                 </aside>
@@ -483,14 +562,17 @@ const CommunityPage = () => {
 ) : filteredPosts.length === 0 ? (
   <p className="text-center text-slate-500">No posts found.</p>
 ) : (
-  filteredPosts.map(post => (
+  filteredPosts.map(post => {
+    // console.log(savedPosts)
+    return (
     <PostCard
-      key={post._id}
-      post={post}
-      onVote={handleVote}
-      onSave={handleSavePost}
-    />
-  ))
+  key={post._id}
+  post={post}
+  onVote={handleVote}
+  onSave={handleSavePost}
+  isSaved={savedPosts.includes(post._id)}
+/>)
+})
 )}
 
                 </main>
