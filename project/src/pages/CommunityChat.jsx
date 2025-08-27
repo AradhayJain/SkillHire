@@ -125,7 +125,7 @@ const CommunityChat = () => {
   useEffect(() => {
     if (!token) return;
 
-    const socket = io(import.meta.env.VITE_BACKEND_URL, { auth: { token } });
+    const socket = io(import.meta.env.SOCKET_URL, { auth: { token } });
     socketRef.current = socket;
 
     if (activeChatId) {

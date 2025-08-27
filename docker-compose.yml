@@ -1,11 +1,10 @@
-# docker-compose.yml (Simple Correction)
+# docker-compose.yml
 
 services:
   ml:
     build:
       context: ./ML
-    ports:
-      - "5000:5000"
+    # No port mapping needed; Nginx will proxy requests
     depends_on:
       - backend
     environment:
@@ -16,22 +15,25 @@ services:
     build:
       context: ./project
       dockerfile: Dockerfile
+      # Use 'args' to pass variables at build time
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        SOCKET_URL: ${SOCKET_URL}
     ports:
-      - "5173:5173"
+      # Map port 80 on your machine to port 80 in the container (where Nginx is running)
+      - "80:80"
     depends_on:
       - backend
       - ml
-    environment:
-      VITE_BACKEND_URL : ${VITE_BACKEND_URL}
-      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+    # The 'environment' section is removed from here as it's not needed at runtime
     restart: unless-stopped
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    # No port mapping needed; Nginx will proxy requests
     environment:
       PORT : ${PORT}
       RAPID_KEY : ${RAPID_KEY}
@@ -54,6 +56,6 @@ services:
       SENDGRID_API_KEY : ${SENDGRID_API_KEY}
       SENDGRID_FROM_EMAIL : ${SENDGRID_FROM_EMAIL}
       GOOGLE_CLIENT_ID : ${GOOGLE_CLIENT_ID}
-      FRONTEND_URL : ${FRONTEND_URL} 
+      FRONTEND_URL : ${FRONTEND_URL}
       BACKEND_ML : ${BACKEND_ML}
     restart: unless-stopped
