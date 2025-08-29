@@ -1,0 +1,47 @@
+# docker-compose.yml
+
+services:
+  ml:
+    image: aradhay2006/resumemanager-ml:latest
+    depends_on:
+      - backend
+    environment:
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+    restart: unless-stopped
+
+  frontend:
+    image: addibib/skillhire-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - ml
+    restart: unless-stopped
+
+  backend:
+    image: addibib/skillhire-backend:latest 
+    environment:
+      PORT : ${PORT}
+      RAPID_KEY : ${RAPID_KEY}
+      RAPID_HOST : ${RAPID_HOST}
+      MONGO_PASSWORD : ${MONGO_PASSWORD}
+      MONGO_URI : ${MONGO_URI}
+      CLOUDINARY_CLOUD_NAME : ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY : ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET : ${CLOUDINARY_API_SECRET}
+      GEMINI_API_KEY : ${GEMINI_API_KEY}
+      SUPPORT_EMAIL : ${SUPPORT_EMAIL}
+      SUPPORT_EMAIL_PASSWORD : ${SUPPORT_EMAIL_PASSWORD}
+      SECRET_KEY : ${SECRET_KEY}
+      SMTP_HOST : ${SMTP_HOST}
+      SMTP_PORT : ${SMTP_PORT}
+      SMTP_USER : ${SMTP_USER}
+      SMTP_PASS : ${SMTP_PASS}
+      FROM_EMAIL : ${FROM_EMAIL}
+      FROM_NAME : ${FROM_NAME}
+      SENDGRID_API_KEY : ${SENDGRID_API_KEY}
+      SENDGRID_FROM_EMAIL : ${SENDGRID_FROM_EMAIL}
+      GOOGLE_CLIENT_ID : ${GOOGLE_CLIENT_ID}
+      FRONTEND_URL : ${FRONTEND_URL}
+      BACKEND_ML : ${BACKEND_ML}
+    restart: unless-stopped
