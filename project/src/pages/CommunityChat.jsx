@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Send, Paperclip, Search, ArrowLeft, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
-import { useSocket } from '../contexts/SocketContext';
+// import { useSocket } from '../contexts/SocketContext';
 
 // --- API Configuration ---
 const api = axios.create({
@@ -45,7 +45,9 @@ const CommunityChat = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
-  const { onlineUsers } = useSocket();
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  
+  // const { onlineUsers } = useSocket();
 
   // --- Data Fetching Effects ---
   useEffect(() => {
@@ -134,6 +136,9 @@ const CommunityChat = () => {
 
     socket.on('receiveMessage', handleReceiveMessage);
     socket.on('newMessageNotification', handleNotification);
+    newSocket.on('getOnlineUsers', (users) => {
+      setOnlineUsers(users);
+    });
 
     return () => {
         socket.off('receiveMessage', handleReceiveMessage);

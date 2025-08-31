@@ -82,8 +82,13 @@ ${extracted_text}
 `
 
 
+const {data} = await axios.post(`${process.env.AI_BACKEND}/api/gemini/response`, {prompt:input_prompt});
 
-const atsInsights = await googleGenAi(input_prompt);
+// const atsInsights = await googleGenAi(input_prompt);
+console.log(data)
+
+const atsInsights = data.response;
+console.log(atsInsights)
 console.log("ATS Score:", atsInsights.General_ATS_Score);
 console.log("Application Success Rate:", atsInsights.Application_Success_Rate);
 console.log("Suggestions:", atsInsights.Personalized_Suggestions);
@@ -104,7 +109,7 @@ console.log("Suggestions:", atsInsights.Personalized_Suggestions);
     res.status(201).json({
         message: "Resume uploaded and analyzed successfully",
         success: true,
-        resume,
+        resume
     });
 });
 
@@ -163,33 +168,38 @@ export const updateResume = asyncHandler(async (req, res) => {
             });
             analyticsData = flaskResponse.data || {};
             const extracted_text = analyticsData.extracted_text || "";
-    const input_prompt = `
-You are an advanced and highly experienced Applicant Tracking System (ATS) specializing in tech roles such as Software Engineering, Data Science, Data Analysis, Big Data Engineering, AI/ML Engineering, and Cloud Engineering. 
-
-Your job is to **evaluate resumes** with precision, providing measurable insights aligned with current industry standards.
-
-Instructions:
-- Read the resume carefully.  
-- Respond ONLY in **valid JSON**.  
-- Do NOT include markdown formatting, code fences, or explanations.  
-- Output MUST be plain JSON that matches the schema exactly.  
-
-Schema:
-{
-  "General_ATS_Score": "Number (1-100)",
-  "Application_Success_Rate": "Number (1-100)"
-}
-
-Resume Text:
-${extracted_text}
-`
-
-
-
-const atsInsights = await googleGenAi(input_prompt);
-console.log("ATS Score:", atsInsights.General_ATS_Score);
-console.log("Application Success Rate:", atsInsights.Application_Success_Rate);
-console.log("Suggestions:", atsInsights.Personalized_Suggestions);
+            const input_prompt = `
+            You are an advanced and highly experienced Applicant Tracking System (ATS) specializing in tech roles such as Software Engineering, Data Science, Data Analysis, Big Data Engineering, AI/ML Engineering, and Cloud Engineering. 
+            
+            Your job is to **evaluate resumes** with precision, providing measurable insights aligned with current industry standards.
+            
+            Instructions:
+            - Read the resume carefully.  
+            - Respond ONLY in **valid JSON**.  
+            - Do NOT include markdown formatting, code fences, or explanations.  
+            - Output MUST be plain JSON that matches the schema exactly.  
+            
+            Schema:
+            {
+              "General_ATS_Score": "Number (1-100)",
+              "Application_Success_Rate": "Number (1-100)"
+            }
+            
+            Resume Text:
+            ${extracted_text}
+            `
+            
+            
+            const {data} = await axios.post(`${process.env.AI_BACKEND}/api/gemini/response`, {prompt:input_prompt});
+            
+            // const atsInsights = await googleGenAi(input_prompt);
+            console.log(data)
+            
+            const atsInsights = data.response;
+            console.log(atsInsights)
+            console.log("ATS Score:", atsInsights.General_ATS_Score);
+            console.log("Application Success Rate:", atsInsights.Application_Success_Rate);
+            console.log("Suggestions:", atsInsights.Personalized_Suggestions);
             
             resume.analyticsData = flaskResponse.data;
             resume.atsScore = atsInsights.General_ATS_Score || 0;

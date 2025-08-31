@@ -2,11 +2,11 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
-import ResumesPage from './pages/ResumesPage';
+// import ResumesPage from './pages/ResumesPage';
 import JobsPage from './pages/JobsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import CommunityPage from './pages/CommunityPage';
-import ResumeUpload from './pages/ResumeUpload';
+// import ResumeUpload from './pages/ResumeUpload';
 import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
 import CommunityChat from './pages/CommunityChat';
@@ -15,12 +15,12 @@ import HandleLogin from './components/HandleLogin';
 import ResetPasswordPage from './pages/Reset';
 import AskAiPage from './pages/Askai';
 import Support from './pages/Support';
-import {SocketProvider} from "./contexts/SocketContext";
+// import {SocketProvider} from "./contexts/SocketContext";
 
 function App() {
   return (
     <AuthProvider>
-      <SocketProvider>
+      {/* <SocketProvider> */}
         <Router>
           <div className="min-h-screen bg-gray-50 font-inter">
             <Routes>
@@ -104,7 +104,7 @@ function App() {
             </Routes>
           </div>
         </Router>
-      </SocketProvider>
+      {/* </SocketProvider> */}
     </AuthProvider>
   );
 }

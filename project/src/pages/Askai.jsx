@@ -86,13 +86,12 @@ const AskAiPage = () => {
 useEffect(() => {
   if (!token) return; // Don't connect if there's no token
 
-  socketRef.current = io(import.meta.env.SOCKET_URL, {
+  socketRef.current = io("https://aibackend-4sot.onrender.com", {
       auth: { token }
   });
 
   // Join AI chat room (so backend sends welcome msg)
-  socketRef.current.emit('joinAIChat');
-
+  socketRef.current.emit('joinAIChat', { user });
   socketRef.current.on('aiMessage', (aiMessage) => {
       setMessages(prev => [...prev, aiMessage]);
       setIsAiTyping(false);
