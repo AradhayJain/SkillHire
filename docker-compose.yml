@@ -20,6 +20,7 @@ services:
         VITE_BACKEND_URL: ${VITE_BACKEND_URL}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         SOCKET_URL: ${SOCKET_URL}
+        AI_SOCKET_URL: ${AI_SOCKET_URL}
     ports:
       # Map port 80 on your machine to port 80 in the container (where Nginx is running)
       - "80:80"

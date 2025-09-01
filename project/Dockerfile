@@ -7,12 +7,14 @@ FROM node:lts-alpine AS build-stage
 ARG VITE_BACKEND_URL
 ARG VITE_GOOGLE_CLIENT_ID
 ARG SOCKET_URL
+ARG AI_SOCKET_URL
 
 # Set them as environment variables inside this build stage
 # This makes them accessible to the `npm run build` command
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 ENV SOCKET_URL=$SOCKET_URL
+ENV AI_SOCKET_URL=$AI_SOCKET_URL
 
 WORKDIR /app
 

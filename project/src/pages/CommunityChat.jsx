@@ -136,7 +136,7 @@ const CommunityChat = () => {
 
     socket.on('receiveMessage', handleReceiveMessage);
     socket.on('newMessageNotification', handleNotification);
-    newSocket.on('getOnlineUsers', (users) => {
+    socket.on('getOnlineUsers', (users) => {
       setOnlineUsers(users);
     });
 
