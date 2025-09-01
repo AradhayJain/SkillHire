@@ -86,7 +86,7 @@ const AskAiPage = () => {
 useEffect(() => {
   if (!token) return; // Don't connect if there's no token
 
-  socketRef.current = io(import.meta.env.AI_SOCKET_URL, {
+  socketRef.current = io(import.meta.env.SOCKET_URL, {
       auth: { token }
   });
 

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { User } from '../models/user.model.js';
 import dotenv from 'dotenv';
+import axios from 'axios';
 dotenv.config({});
 // --- AI Client (Gemini) ---
 const genAI = new GoogleGenerativeAI( process.env.GEMINI_API_KEY );
@@ -102,9 +103,8 @@ export const initSocket = (server) => {
             User's Question: "${userQuestion}"`;
 
             try {
-                const result = await model.generateContent(prompt);
-                const response = await result.response;
-                const text = response.text();
+                const response = await axios.post(`${process.env.AI_BACKEND}/api/gemini/gem`, { prompt });
+                const text = response.data.response; // ✅ fixed
                 
                 socket.emit('aiMessage', { sender: 'ai', text });
             } catch (error) {

@@ -15,12 +15,12 @@ import HandleLogin from './components/HandleLogin';
 import ResetPasswordPage from './pages/Reset';
 import AskAiPage from './pages/Askai';
 import Support from './pages/Support';
-// import {SocketProvider} from "./contexts/SocketContext";
+import {SocketProvider} from "./contexts/SocketContext";
 
 function App() {
   return (
     <AuthProvider>
-      {/* <SocketProvider> */}
+      <SocketProvider>
         <Router>
           <div className="min-h-screen bg-gray-50 font-inter">
             <Routes>
@@ -104,7 +104,7 @@ function App() {
             </Routes>
           </div>
         </Router>
-      {/* </SocketProvider> */}
+      </SocketProvider>
     </AuthProvider>
   );
 }
