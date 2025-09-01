@@ -1,10 +1,7 @@
-# docker-compose.yml
-
 services:
   ml:
     build:
       context: ./ML
-    # No port mapping needed; Nginx will proxy requests
     depends_on:
       - backend
     environment:
@@ -15,49 +12,62 @@ services:
     build:
       context: ./project
       dockerfile: Dockerfile
-      # Use 'args' to pass variables at build time
       args:
         VITE_BACKEND_URL: ${VITE_BACKEND_URL}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         SOCKET_URL: ${SOCKET_URL}
         AI_SOCKET_URL: ${AI_SOCKET_URL}
     ports:
-      # Map port 80 on your machine to port 80 in the container (where Nginx is running)
+      # Expose both HTTP and HTTPS ports to the world
       - "80:80"
+      - "443:443"
+    volumes:
+      # Mount your Nginx config. Assumes your config is in ./nginx/nginx.conf
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      # Add shared volumes for Certbot
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
     depends_on:
       - backend
       - ml
-    # The 'environment' section is removed from here as it's not needed at runtime
     restart: unless-stopped
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # No port mapping needed; Nginx will proxy requests
     environment:
-      PORT : ${PORT}
-      RAPID_KEY : ${RAPID_KEY}
-      RAPID_HOST : ${RAPID_HOST}
-      MONGO_PASSWORD : ${MONGO_PASSWORD}
-      MONGO_URI : ${MONGO_URI}
-      CLOUDINARY_CLOUD_NAME : ${CLOUDINARY_CLOUD_NAME}
-      CLOUDINARY_API_KEY : ${CLOUDINARY_API_KEY}
-      CLOUDINARY_API_SECRET : ${CLOUDINARY_API_SECRET}
-      GEMINI_API_KEY : ${GEMINI_API_KEY}
-      SUPPORT_EMAIL : ${SUPPORT_EMAIL}
-      SUPPORT_EMAIL_PASSWORD : ${SUPPORT_EMAIL_PASSWORD}
-      SECRET_KEY : ${SECRET_KEY}
-      SMTP_HOST : ${SMTP_HOST}
-      SMTP_PORT : ${SMTP_PORT}
-      SMTP_USER : ${SMTP_USER}
-      SMTP_PASS : ${SMTP_PASS}
-      FROM_EMAIL : ${FROM_EMAIL}
-      FROM_NAME : ${FROM_NAME}
-      SENDGRID_API_KEY : ${SENDGRID_API_KEY}
-      SENDGRID_FROM_EMAIL : ${SENDGRID_FROM_EMAIL}
-      GOOGLE_CLIENT_ID : ${GOOGLE_CLIENT_ID}
-      FRONTEND_URL : ${FRONTEND_URL}
-      BACKEND_ML : ${BACKEND_ML}
-      AI_BACKEND : ${AI_BACKEND}
+      PORT: ${PORT}
+      RAPID_KEY: ${RAPID_KEY}
+      RAPID_HOST: ${RAPID_HOST}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_URI: ${MONGO_URI}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL}
+      SUPPORT_EMAIL_PASSWORD: ${SUPPORT_EMAIL_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_EMAIL: ${FROM_EMAIL}
+      FROM_NAME: ${FROM_NAME}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      FRONTEND_URL: ${FRONTEND_URL}
+      BACKEND_ML: ${BACKEND_ML}
+      AI_BACKEND: ${AI_BACKEND}
     restart: unless-stopped
+
+  # New service definition for running Certbot commands.
+  certbot:
+    image: certbot/certbot
+    volumes:
+      # Mount the same shared volumes
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+
