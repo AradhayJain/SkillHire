@@ -12,21 +12,21 @@ const api = axios.create({
 });
 
 // --- Helper function to format date ---
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+// const formatDate = (dateString) => {
+//   if (!dateString) return '';
+//   const date = new Date(dateString);
+//   const today = new Date();
+//   const yesterday = new Date(today);
+//   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (date.toDateString() === today.toDateString()) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-  if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday';
-  }
-  return date.toLocaleDateString();
-};
+//   if (date.toDateString() === today.toDateString()) {
+//     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+//   }
+//   if (date.toDateString() === yesterday.toDateString()) {
+//     return 'Yesterday';
+//   }
+//   return date.toLocaleDateString();
+// };
 
 // --- Main Chat Component ---
 const CommunityChat = () => {
@@ -44,8 +44,8 @@ const CommunityChat = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState(""); 
   const socketRef = useRef(null);
-  // const [onlineUsers, setOnlineUsers] = useState([]);
   
   const { onlineUsers } = useSocket();
 
@@ -73,12 +73,22 @@ const CommunityChat = () => {
       setActiveChat(null);
     }
   }, [chatId, chats]);
+  
+  const getChatDisplayInfo = (chat) => {
+    if (!chat || !user) return { name: '', pic: '' };
+    if (chat.chatType === 'group') {
+      return { name: chat.chatName, pic: 'https://placehold.co/100x100/6366f1/ffffff?text=G' };
+    }
+    const otherMember = chat.members.find(member => member._id !== user._id);
+    return {
+      name: otherMember?.name || 'Unknown User',
+      pic: otherMember?.pic || 'https://placehold.co/100x100/a0a0a0/ffffff?text=?'
+    };
+  };
 
-  // ✅ FIX: This effect now only fetches messages when the chatId changes.
-  // It no longer depends on the unstable `activeChat` object.
+
   useEffect(() => {
     const fetchMessages = async () => {
-      // Use `chatId` directly for the condition and API call
       if (!chatId || !token) {
         setMessages([]);
         return;
@@ -95,7 +105,7 @@ const CommunityChat = () => {
       }
     };
     fetchMessages();
-  }, [chatId, token]); // The dependency is now the stable `chatId` from the URL
+  }, [chatId, token]);
 
   // --- Memoized Socket Event Handlers ---
   const handleReceiveMessage = useCallback((incomingMessage) => {
@@ -120,9 +130,23 @@ const CommunityChat = () => {
         }));
     }
   }, [chatId]);
+  // ✅ Filter chats based on name or lastMessage
+  const filteredChats = (() => {
+    if (!searchQuery.trim()) return chats;
+    if (!user) return chats;
+  
+    return chats.filter(chat => {
+      const info = getChatDisplayInfo(chat);
+      const nameMatch = info.name?.toLowerCase().includes(searchQuery);
+      const messageMatch = chat.lastMessage?.messageText?.toLowerCase().includes(searchQuery);
+      return nameMatch || messageMatch;
+    });
+  })();
+  
+  
+
 
   // --- Socket Connection and Listeners Effect ---
-  // This section is reverted to your original logic
   const activeChatId = activeChat?._id;
   useEffect(() => {
     if (!token) return;
@@ -136,9 +160,6 @@ const CommunityChat = () => {
 
     socket.on('receiveMessage', handleReceiveMessage);
     socket.on('newMessageNotification', handleNotification);
-    // socket.on('getOnlineUsers', (users) => {
-    //   setOnlineUsers(users);
-    // });
 
     return () => {
         socket.off('receiveMessage', handleReceiveMessage);
@@ -170,28 +191,16 @@ const CommunityChat = () => {
     }
   };
   
-  const getChatDisplayInfo = (chat) => {
-    if (!chat || !user) return { name: '', pic: '' };
-    if (chat.chatType === 'group') {
-      return { name: chat.chatName, pic: 'https://placehold.co/100x100/6366f1/ffffff?text=G' };
-    }
-    const otherMember = chat.members.find(member => member._id !== user._id);
-    return {
-      name: otherMember?.name || 'Unknown User',
-      pic: otherMember?.pic || 'https://placehold.co/100x100/a0a0a0/ffffff?text=?'
-    };
-  };
-
+  
   const activeChatInfo = useMemo(() => activeChat ? getChatDisplayInfo(activeChat) : null, [activeChat, user]);
 
-  // --- Render JSX ---
-  // (The entire JSX block remains unchanged)
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
-      {/* Sidebar */}
-      <aside className="w-full md:w-1/3 lg:w-1/4 h-screen flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700">
+      {/* Sidebar - ✅ UPDATED: Conditionally hidden on mobile when a chat is active */}
+      <aside className={`${chatId ? 'hidden' : 'flex'} w-full flex-col md:flex md:w-1/3 lg:w-1/4 h-screen bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700`}>
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">Messages</h1>
+          {/* This button's functionality can be for going back in a larger app context */}
           <button onClick={() => navigate('/community')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
              <ArrowLeft size={20} />
           </button>
@@ -199,7 +208,16 @@ const CommunityChat = () => {
         <div className="p-3 flex-shrink-0">
           <div className="relative">
             <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" placeholder="Search chats..." className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700 border border-transparent rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+            <input 
+  type="text" 
+  placeholder="Search chats..." 
+  value={searchQuery}                       // ✅ bind state
+  onChange={(e) => setSearchQuery(e.target.value.toLowerCase())} 
+  className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700 
+             border border-transparent rounded-lg focus:ring-2 
+             focus:ring-blue-500 focus:border-transparent outline-none" 
+/>
+
           </div>
         </div>
         <div className="flex-grow overflow-y-auto">
@@ -207,47 +225,62 @@ const CommunityChat = () => {
             <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-blue-500" size={32} /></div>
           ) : (
             <ul>
-              {chats.map(chat => {
-                const info = getChatDisplayInfo(chat);
-                const unreadCount = unreadCounts[chat._id] || 0;
-                const otherMember = chat.members.find(m => m._id !== user._id);
-                const isOnline = otherMember && onlineUsers.includes(otherMember._id);
-                return (
-                  <li key={chat._id} onClick={() => navigate(`/community/chat/${chat._id}`)}
-                    className={`flex items-center gap-4 p-3 mx-2 my-1 cursor-pointer rounded-lg transition-colors ${activeChat?._id === chat._id ? 'bg-blue-500 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                  >
-                    <div className="relative flex-shrink-0">
-                      <img src={info.pic} alt={info.name} className="w-12 h-12 rounded-full object-cover" />
-                      {isOnline && (
-                        <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full bg-green-400 border-2 border-white dark:border-slate-800"></span>
-                      )}
-                    </div>
-                    <div className="flex-grow overflow-hidden">
-                      <div className="flex justify-between items-center">
-                        <p className="font-semibold truncate">{info.name}</p>
-                        {unreadCount > 0 && (
-                          <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                            {unreadCount}
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-sm truncate ${activeChat?._id === chat._id ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                        {chat.lastMessage?.messageText || 'No messages yet...'}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+  {filteredChats.length > 0 ? (
+    filteredChats.map(chat => {
+      const info = getChatDisplayInfo(chat);
+      const unreadCount = unreadCounts[chat._id] || 0;
+      const otherMember = chat.members.find(m => m._id !== user._id);
+      const isOnline = otherMember && onlineUsers.includes(otherMember._id);
+
+      return (
+        <li key={chat._id} onClick={() => navigate(`/community/chat/${chat._id}`)}
+          className={`flex items-center gap-4 p-3 mx-2 my-1 cursor-pointer rounded-lg transition-colors 
+                     ${activeChat?._id === chat._id ? 'bg-blue-500 text-white' 
+                     : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+        >
+          <div className="relative flex-shrink-0">
+            <img src={info.pic} alt={info.name} className="w-12 h-12 rounded-full object-cover" />
+            {isOnline && (
+              <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full bg-green-400 border-2 border-white dark:border-slate-800"></span>
+            )}
+          </div>
+          <div className="flex-grow overflow-hidden">
+            <div className="flex justify-between items-center">
+              <p className="font-semibold truncate">{info.name}</p>
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <p className={`text-sm truncate ${activeChat?._id === chat._id ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
+              {chat.lastMessage?.messageText || 'No messages yet...'}
+            </p>
+          </div>
+        </li>
+      );
+    })
+  ) : (
+    <p className="text-center text-slate-500 py-6">No chats found</p>
+  )}
+</ul>
+
           )}
         </div>
       </aside>
 
-      {/* Main Chat Window */}
-      <main className="hidden md:flex flex-1 flex-col h-screen">
+      {/* Main Chat Window - ✅ UPDATED: Conditionally shown on mobile when a chat is active */}
+      <main className={`${chatId ? 'flex' : 'hidden'} md:flex flex-1 flex-col h-screen`}>
         {activeChat && activeChatInfo ? (
           <>
             <header className="flex items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
+              {/* ✅ ADDED: Back button for mobile view */}
+              <button 
+                onClick={() => navigate('/community/chat')} 
+                className="p-2 mr-4 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 md:hidden"
+              >
+                <ArrowLeft size={20} />
+              </button>
               <img src={activeChatInfo.pic} alt={activeChatInfo.name} className="w-10 h-10 rounded-full object-cover mr-4" />
               <h2 className="font-bold text-lg text-slate-900 dark:text-white">{activeChatInfo.name}</h2>
             </header>
