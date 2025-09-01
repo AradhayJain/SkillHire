@@ -96,7 +96,7 @@ console.log("Suggestions:", atsInsights.Personalized_Suggestions);
     const newResumeData = {
         userId,
         ResumeTitle: title,
-        cloudinaryPath: cloudinaryUpload.url,
+        cloudinaryPath: cloudinaryUpload.secure_url,
         atsScore:atsInsights.General_ATS_Score, 
         analyticsData, 
         updatesRemaining: 0, 
@@ -159,7 +159,7 @@ export const updateResume = asyncHandler(async (req, res) => {
             throw new Error("Failed to upload the new resume file.");
         }
         let analyticsData = {};
-        resume.cloudinaryPath = newUpload.url;
+        resume.cloudinaryPath = newUpload.secure_url;
         
         // --- Re-run full analysis when a new file is uploaded ---
         try {

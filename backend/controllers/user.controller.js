@@ -285,8 +285,8 @@ export const registerRequestOtp = asyncHandler(async (req, res) => {
   
   if (req.file && req.file.path) {
       const picUpload = await uploadOnCloudinary(req.file.path);
-      if (picUpload && picUpload.url) {
-          user.pic = picUpload.url;
+      if (picUpload && picUpload.secure_url) {
+          user.pic = picUpload.secure_url;
       }
   }
   
