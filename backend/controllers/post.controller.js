@@ -162,7 +162,7 @@ export const upvotePost = async (req, res) => {
       if (type === "up") {
         post.upvotes += 1;
       } else if (type === "down") {
-        if(diff<0){
+        if(diff<=0){
 
           post.downvotes = post.downvotes;
         }
