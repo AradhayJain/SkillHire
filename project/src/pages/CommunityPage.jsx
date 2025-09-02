@@ -473,7 +473,11 @@ useEffect(() => {
       }
       else{
         console.log("saved psots" + data)
-        setSavedPosts(data?.map(p => p.postId._id) || []);
+        setSavedPosts(
+          data
+            .filter(p => p?.postId?._id) // only keep posts with valid IDs
+            .map(p => p.postId._id)
+        );
       }
     } catch (err) {
       console.error("Failed to fetch saved posts:", err);

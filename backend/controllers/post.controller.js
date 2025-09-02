@@ -243,6 +243,8 @@ export const upvotePost = async (req, res) => {
     populate: { path: "userId", select: "name pic" },
   });
 
+  console.log(savedPosts)
+
       res.json(savedPosts);
     } catch (err) {
       console.error("Get saved posts error:", err);
