@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Briefcase, UploadCloud, UserPlus, LogIn, Star, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-
+import logo from "../../public/logo.png";
 // --- Reusable Components ---
 const Button = ({ children, variant = 'primary', size = 'md', className = '', loading = false, ...props }) => {
   const baseStyle = "inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50";
@@ -333,7 +333,7 @@ const AuthPage = ({ type }) => {
           <div className="max-w-md w-full">
             <div className="text-center mb-8">
               <Link to="/" className="flex items-center justify-center space-x-2">
-                <Briefcase className="h-10 w-10 text-blue-600" />
+                <img src={logo} alt="S" />
                 <span className="text-3xl font-bold text-blue-600">SkillSnap</span>
               </Link>
             </div>
