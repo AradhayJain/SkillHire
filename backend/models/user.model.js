@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   lastLogin: { type: Date },
   pic: {
     type: String,
-    default: "/default.png",
+    default: "https://skillsnap.co.in/public/default.png",
   },
   PhoneNumber:{
     type: Number,
