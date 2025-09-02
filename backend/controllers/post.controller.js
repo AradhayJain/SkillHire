@@ -237,10 +237,10 @@ export const upvotePost = async (req, res) => {
     try {
       const userId = req.user._id;
       const savedPosts = await SavedPost.find({ userId })
-        .populate({
-          path: "postId",
-          populate: { path: "userId", select: "name pic" }, // get post author
-        })
+  .populate({
+    populate: { path: "userId", select: "name pic" },
+  });
+
       res.json(savedPosts);
     } catch (err) {
       console.error("Get saved posts error:", err);
