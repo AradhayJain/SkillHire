@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   lastLogin: { type: Date },
   pic: {
     type: String,
-    default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
+    default: "/deafault.png",
   },
   PhoneNumber:{
     type: Number,
