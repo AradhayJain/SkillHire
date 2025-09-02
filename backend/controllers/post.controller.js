@@ -254,52 +254,38 @@ export const upvotePost = async (req, res) => {
 
 
   export const deletePost = asyncHandler(async (req, res) => {
-    // 1. Find the post by its ID from the request parameters
-    const post = await CommunityPost.findById(req.params.postId);
-    const savedPost = await SavedPost.find({ postId: req.params.postId });
+    const { postId } = req.params;
   
-    // 2. If the post doesn't exist, return a 404 error
+    // 1. Find the post
+    const post = await CommunityPost.findById(postId);
     if (!post) {
       res.status(404);
       throw new Error('Post not found');
     }
   
-    // 3. Authorization Check: Ensure the logged-in user is the post's author.
-    // This assumes your `protect` middleware adds the user object to the request (`req.user`).
+    // 2. Authorization check
     if (post.userId.toString() !== req.user._id.toString()) {
-      res.status(403); // 403 Forbidden is more appropriate than 401 Unauthorized here
+      res.status(403);
       throw new Error('User not authorized to delete this post');
     }
   
-    // 4. (Optional but Recommended) Delete associated image from Cloudinary if it exists
+    // 3. Delete image from Cloudinary if exists
     if (post.image) {
       try {
-        // Extract the public_id from the full Cloudinary URL.
-        // Example URL: "http://res.cloudinary.com/your_cloud/image/upload/v12345/folder/public_id.jpg"
-        // We need to extract "folder/public_id"
-        // const publicId = post.image.substring(
-        //   post.image.lastIndexOf('/') + 1,
-        //   post.image.lastIndexOf('.')
-        // );
-        
-        // Tell Cloudinary to delete the image
-        await deleteFromCloudinary(post.image);
-  
+        await deleteFromCloudinary(post.image); 
       } catch (cloudinaryError) {
-          // Log the error but don't block the post deletion from our DB
-          console.error("Cloudinary delete error:", cloudinaryError.message);
+        console.error("Cloudinary delete error:", cloudinaryError.message);
       }
     }
   
-    // 5. Delete the post from the database
+    // 4. Delete the post itself
     await post.deleteOne();
-
-    if(savedPost){
-      await SavedPost.deleteMany({ postId: req.params.id });
-    }
   
-    // 6. Send a success response
+    // 5. Delete all saved references to this post
+    await SavedPost.deleteMany({ postId });
+  
+    // 6. Send response
     res.status(200).json({ message: 'Post deleted successfully' });
   });
-      
+  
   
