@@ -62,7 +62,7 @@ const Navbar = ({ toggleTheme, currentTheme }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center space-x-2">
-            <img src={logo} alt="S" className='rounded-lg w-14 h-14' />
+            <img src={logo} alt="S" className='rounded-lg w-10 h-10' />
             <span className="text-2xl font-bold text-slate-800 dark:text-white">SkillSnap</span>
           </Link>
           <div className="hidden md:flex items-center space-x-8">
@@ -367,7 +367,7 @@ const LandingPage = () => {
             <div className="grid md:grid-cols-4 gap-8">
               <div className="md:col-span-2">
                 <div className="flex items-center space-x-2 mb-4">
-                  <img src={logo} alt="S" className='rounded-lg w-14 h-14' />
+                  <img src={logo} alt="S" className='rounded-lg w-10 h-10' />
                   <span className="text-xl font-bold">SkillSnap</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 max-w-md mb-6">AI-powered resume optimization and job matching platform helping professionals land their dream careers.</p>

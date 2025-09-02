@@ -333,7 +333,7 @@ const AuthPage = ({ type }) => {
           <div className="max-w-md w-full">
             <div className="text-center mb-8">
               <Link to="/" className="flex items-center justify-center space-x-2">
-                <img src={logo} alt="S" className='rounded-lg w-14 h-14' />
+                <img src={logo} alt="S" className='rounded-lg w-10 h-10' />
                 <span className="text-3xl font-bold text-blue-600">SkillSnap</span>
               </Link>
             </div>
