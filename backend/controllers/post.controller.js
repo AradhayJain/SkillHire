@@ -238,6 +238,8 @@ export const upvotePost = async (req, res) => {
       const userId = req.user._id;
       const savedPosts = await SavedPost.find({ userId })
   .populate({
+    path: "postId",
+    select: "_id description resumeId",   // explicitly request _id
     populate: { path: "userId", select: "name pic" },
   });
 
