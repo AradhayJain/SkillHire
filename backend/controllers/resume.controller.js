@@ -12,6 +12,8 @@ export const uploadResume = asyncHandler(async (req, res) => {
     const { title } = req.body;
     const userId = req.user?._id;
 
+    
+
     if (!title) {
         res.status(400);
         throw new Error("Resume title is required");
@@ -19,6 +21,9 @@ export const uploadResume = asyncHandler(async (req, res) => {
     if (!req.file) {
         res.status(400);
         throw new Error("Resume file is required");
+    }
+    if (req.file.size > 2 * 1024 * 1024) { // 2 MB
+        return res.status(400).json({ error: "File size exceeds 2MB limit" });
     }
     console.log(req.file.path)
     console.log("Cloudinary Config:", cloudinary.config());
@@ -151,6 +156,9 @@ export const updateResume = asyncHandler(async (req, res) => {
 
     // --- Handle File Update ---
     if (req.file) {
+        if (req.file.size > 2 * 1024 * 1024) { // 2 MB
+            return res.status(400).json({ error: "File size exceeds 2MB limit" });
+        }
         const oldPath = resume.cloudinaryPath;
 
         const newUpload = await uploadOnCloudinary(req.file.path);
