@@ -472,7 +472,7 @@ useEffect(() => {
         setSavedPosts([]);
       }
       else{
-        console.log(data)
+        console.log("saved psots" + data)
         setSavedPosts(data?.map(p => p.postId._id) || []);
       }
     } catch (err) {
