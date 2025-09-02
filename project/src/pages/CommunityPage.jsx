@@ -86,6 +86,11 @@ const PostCard = ({ post, onVote, onSave, isSaved, onDelete, currentUser }) => {
     setShowOptions(false); // Close menu after clicking
   };
 
+  useEffect(()=>{
+    console.log(isSaved);
+    console.log(post);
+  },[])
+
   const netScore = (post.upvotes || 0) - (post.downvotes || 0);
   const isOwner = currentUser && post.userId && currentUser._id === post.userId._id;
 
@@ -467,7 +472,7 @@ useEffect(() => {
         setSavedPosts([]);
       }
       else{
-        // console.log(data)
+        console.log(data)
         setSavedPosts(data?.map(p => p.postId._id) || []);
       }
     } catch (err) {
