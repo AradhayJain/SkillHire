@@ -7,6 +7,9 @@ import {
   Linkedin, Plus, Sun, Moon, Upload
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import aradhay from "../../public/aradhay.png";
+import aditya from "../../public/aditya1.jpeg"
+import arjun from "../../public/arjun.jpeg"
 
 // --- Reusable Components (can be moved to their own files) ---
 const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
@@ -133,9 +136,9 @@ const LandingPage = () => {
   ];
 
   const teamMembers = [
-    { name: 'Aradhay Jain', role: 'CEO & Co-Founder', image: 'https://placehold.co/200x200/E2E8F0/475569?text=AJ', social: 'https://linkedin.com' },
-    { name: 'Aditya Sahu', role: 'CTO & Co-Founder', image: 'https://placehold.co/200x200/E2E8F0/475569?text=AS', social: 'https://linkedin.com' },
-    { name: 'Arjun Yadav', role: 'COO & Co-Founder', image: 'https://placehold.co/200x200/E2E8F0/475569?text=AY', social: 'https://linkedin.com' },
+    { name: 'Aradhay Jain', role: 'CEO & Co-Founder', image:{aradhay}, social: 'https://www.linkedin.com/in/aradhayjain2006/' },
+    { name: 'Aditya Sahu', role: 'CTO & Co-Founder', image: {aditya}, social: 'https://www.linkedin.com/in/aditya-bibhas-sahu-632995280/' },
+    { name: 'Arjun Yadav', role: 'COO & Co-Founder', image: {arjun}, social: 'https://www.linkedin.com/in/arjun-yadav-5526362b3/' },
   ];
   
   const testimonials = [
