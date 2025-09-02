@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   lastLogin: { type: Date },
   pic: {
     type: String,
-    default: "/deafault.png",
+    default: "/default.png",
   },
   PhoneNumber:{
     type: Number,
