@@ -288,7 +288,7 @@ export const upvotePost = async (req, res) => {
     }
   
     // 5. Delete the post from the database
-    await post.remove();
+    await post.deleteOne();
 
     if(savedPost){
       await SavedPost.deleteMany({ postId: req.params.id });
