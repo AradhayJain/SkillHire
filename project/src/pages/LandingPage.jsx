@@ -136,9 +136,9 @@ const LandingPage = () => {
   ];
 
   const teamMembers = [
-    { name: 'Aradhay Jain', role: 'CEO & Co-Founder', image:{aradhay}, social: 'https://www.linkedin.com/in/aradhayjain2006/' },
-    { name: 'Aditya Sahu', role: 'CTO & Co-Founder', image: {aditya}, social: 'https://www.linkedin.com/in/aditya-bibhas-sahu-632995280/' },
-    { name: 'Arjun Yadav', role: 'COO & Co-Founder', image: {arjun}, social: 'https://www.linkedin.com/in/arjun-yadav-5526362b3/' },
+    { name: 'Aradhay Jain', role: 'CEO & Co-Founder', image:aradhay, social: 'https://www.linkedin.com/in/aradhayjain2006/' },
+    { name: 'Aditya Sahu', role: 'CTO & Co-Founder', image:aditya, social: 'https://www.linkedin.com/in/aditya-bibhas-sahu-632995280/' },
+    { name: 'Arjun Yadav', role: 'COO & Co-Founder', image:arjun, social: 'https://www.linkedin.com/in/arjun-yadav-5526362b3/' },
   ];
   
   const testimonials = [
