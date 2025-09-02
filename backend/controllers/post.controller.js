@@ -1,7 +1,7 @@
 import { CommunityPost } from "../models/communityPost.model.js";
 import { Resume } from "../models/resume.model.js";
 import asyncHandler from "express-async-handler";
-import uploadOnCloudinary from "../utils/cloudinary.js";
+import uploadOnCloudinary, { deleteFromCloudinary } from "../utils/cloudinary.js";
 import { SavedPost } from "../models/savedPost.model.js";
 /**
  * @desc    Create a new community post
@@ -247,4 +247,55 @@ export const upvotePost = async (req, res) => {
       res.status(500).json({ message: "Server error" });
     }
   };
+
+
+  export const deletePost = asyncHandler(async (req, res) => {
+    // 1. Find the post by its ID from the request parameters
+    const post = await CommunityPost.findById(req.params.postId);
+    const savedPost = await SavedPost.find({ postId: req.params.postId });
+  
+    // 2. If the post doesn't exist, return a 404 error
+    if (!post) {
+      res.status(404);
+      throw new Error('Post not found');
+    }
+  
+    // 3. Authorization Check: Ensure the logged-in user is the post's author.
+    // This assumes your `protect` middleware adds the user object to the request (`req.user`).
+    if (post.userId.toString() !== req.user._id.toString()) {
+      res.status(403); // 403 Forbidden is more appropriate than 401 Unauthorized here
+      throw new Error('User not authorized to delete this post');
+    }
+  
+    // 4. (Optional but Recommended) Delete associated image from Cloudinary if it exists
+    if (post.image) {
+      try {
+        // Extract the public_id from the full Cloudinary URL.
+        // Example URL: "http://res.cloudinary.com/your_cloud/image/upload/v12345/folder/public_id.jpg"
+        // We need to extract "folder/public_id"
+        // const publicId = post.image.substring(
+        //   post.image.lastIndexOf('/') + 1,
+        //   post.image.lastIndexOf('.')
+        // );
+        
+        // Tell Cloudinary to delete the image
+        await deleteFromCloudinary(post.image);
+  
+      } catch (cloudinaryError) {
+          // Log the error but don't block the post deletion from our DB
+          console.error("Cloudinary delete error:", cloudinaryError.message);
+      }
+    }
+  
+    // 5. Delete the post from the database
+    await post.remove();
+
+    if(savedPost){
+      await SavedPost.deleteMany({ postId: req.params.id });
+    }
+  
+    // 6. Send a success response
+    res.status(200).json({ message: 'Post deleted successfully' });
+  });
+      
   

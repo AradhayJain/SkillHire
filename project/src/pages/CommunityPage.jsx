@@ -16,7 +16,9 @@ import {
   X,
   Loader2,
   Paperclip,
-  Target
+  Target,
+  MoreVertical, // <-- Add this
+  Trash2, 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -64,19 +66,28 @@ const getThumbnailUrl = (cloudinaryPath) => {
 
 
 // --- Reusable Components ---
-const PostCard = ({ post, onVote, onSave, isSaved }) => {
+// CommunityPage.js
+
+// --- Reusable Components ---
+const PostCard = ({ post, onVote, onSave, isSaved, onDelete, currentUser }) => {
+  const [showOptions, setShowOptions] = useState(false);
   const thumbnailUrl = post.resumeId
     ? getThumbnailUrl(post.resumeId.cloudinaryPath)
     : null;
-  useEffect(() => {
-    // console.log(isSaved);
-  }, [post]);
+
   const handleSaveClick = (e) => {
     e.stopPropagation(); // Prevent navigating if wrapped in a link
     onSave(post._id);
   };
 
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    onDelete(post._id);
+    setShowOptions(false); // Close menu after clicking
+  };
+
   const netScore = (post.upvotes || 0) - (post.downvotes || 0);
+  const isOwner = currentUser && post.userId && currentUser._id === post.userId._id;
 
   return (
     <Card className="flex gap-4 p-4 mb-4 dark:bg-slate-800">
@@ -126,17 +137,53 @@ const PostCard = ({ post, onVote, onSave, isSaved }) => {
             </p>
           </div>
 
-          {/* Save button */}
-          <button
-            onClick={handleSaveClick}
-            className={`p-2 rounded-full transition-colors ${
-              isSaved
-                ? "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
-                : "text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-            }`}
-          >
-            <Bookmark size={16} className={isSaved ? "fill-current" : ""} />
-          </button>
+          {/* Action buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleSaveClick}
+              className={`p-2 rounded-full transition-colors ${
+                isSaved
+                  ? "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+                  : "text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              <Bookmark size={16} className={isSaved ? "fill-current" : ""} />
+            </button>
+
+            {/* NEW: More Options Button & Dropdown */}
+            {isOwner && (
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowOptions(!showOptions);
+                  }}
+                  className="p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <MoreVertical size={16} />
+                </button>
+                <AnimatePresence>
+                  {showOptions && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.1 }}
+                      className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-md shadow-lg z-10"
+                    >
+                      <button
+                        onClick={handleDeleteClick}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 size={14} />
+                        Delete Post
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Post description */}
@@ -317,6 +364,42 @@ const CommunityPage = () => {
       return false;
     }
   };
+
+  // CommunityPage.js
+
+  // ... after handleCreatePost function
+  const handleDeletePost = async (postId) => {
+    // 1. Confirm with the user
+    if (!window.confirm("Are you sure you want to permanently delete this post?")) {
+      return;
+    }
+
+    try {
+      // 2. Send delete request to the backend
+      await api.delete(`/post/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 3. Update state to remove the post from the UI
+      setPosts((currentPosts) => currentPosts.filter((p) => p._id !== postId));
+      
+    } catch (err) {
+      console.error("Failed to delete post:", err);filteredPosts.map(post => {
+        return (
+        <PostCard
+          key={post._id}
+          post={post}
+          onVote={handleVote}
+          onSave={handleSavePost}
+          onDelete={handleDeletePost}      // <-- Add this line
+          currentUser={user}              // <-- Add this line
+          isSaved={savedPosts.includes(post._id)}
+        />)
+      })
+      alert("Error: Could not delete the post. Please try again.");
+    }
+  };
+
   const handleVote = (postId, type) => {
     setPosts(prev =>
       prev.map(p => {
@@ -563,16 +646,17 @@ const handleSavePost = async (postId) => {
   <p className="text-center text-slate-500">No posts found.</p>
 ) : (
   filteredPosts.map(post => {
-    // console.log(savedPosts)
     return (
     <PostCard
-  key={post._id}
-  post={post}
-  onVote={handleVote}
-  onSave={handleSavePost}
-  isSaved={savedPosts.includes(post._id)}
-/>)
-})
+      key={post._id}
+      post={post}
+      onVote={handleVote}
+      onSave={handleSavePost}
+      onDelete={handleDeletePost}      // <-- Add this line
+      currentUser={user}              // <-- Add this line
+      isSaved={savedPosts.includes(post._id)}
+    />)
+  })
 )}
 
                 </main>

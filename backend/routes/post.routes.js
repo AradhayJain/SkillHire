@@ -1,5 +1,5 @@
 import express from "express";
-import { AddPost, downvotePost, getPosts, getSavedPosts, getTopTags, toggleSavePost, upvotePost, votePost } from "../controllers/post.controller.js";
+import { AddPost, deletePost, downvotePost, getPosts, getSavedPosts, getTopTags, toggleSavePost, upvotePost, votePost } from "../controllers/post.controller.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import upload from "../middlewares/multer.js";
 
@@ -13,6 +13,7 @@ router.post("/:postId/vote",protect, votePost);
 router.get("/top-tags", getTopTags);
 router.post("/save/:postId", protect, toggleSavePost);
 router.get("/saved", protect, getSavedPosts);
+router.delete("/:postId",protect,deletePost);
 
 
 export default router;
