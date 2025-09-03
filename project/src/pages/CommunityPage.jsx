@@ -289,7 +289,8 @@ const CommunityPage = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        setError(null);
+        setError(null);setPosts(data.posts);
+        setAllPosts(data.posts);
         const params = new URLSearchParams();
         if (filters.tags && filters.tags !== 'all') params.append('tags', filters.tags);
         if (filters.sort) params.append('sort', filters.sort);
@@ -420,28 +421,35 @@ const CommunityPage = () => {
         let newUpvotes = [...p.upvotes];
         let newDownvotes = [...p.downvotes];
   
-        // remove current user from both first (reset)
-        newUpvotes = newUpvotes.filter(id => id !== user._id);
-        newDownvotes = newDownvotes.filter(id => id !== user._id);
-  
-        const diff = newUpvotes.length - newDownvotes.length;
-  
         if (type === "up") {
-          if (p.userVote !== "up") {
-            newUpvotes.push(user._id);
-          }
-        } else if (type === "down") {
-          if (diff > 0 && p.userVote !== "down") {
-            newDownvotes.push(user._id);
+          if (p.userVote === "up") {
+            // Toggle off
+            newUpvotes = newUpvotes.filter(id => id !== user._id);
+            return { ...p, upvotes: newUpvotes, userVote: null };
+          } else {
+            // Switch to upvote
+            newDownvotes = newDownvotes.filter(id => id !== user._id);
+            if (!newUpvotes.includes(user._id)) newUpvotes.push(user._id);
+            return { ...p, upvotes: newUpvotes, downvotes: newDownvotes, userVote: "up" };
           }
         }
   
-        return {
-          ...p,
-          upvotes: newUpvotes,
-          downvotes: newDownvotes,
-          userVote: type,
-        };
+        if (type === "down") {
+          const diff = newUpvotes.length - newDownvotes.length;
+  
+          if (p.userVote === "down") {
+            // Toggle off
+            newDownvotes = newDownvotes.filter(id => id !== user._id);
+            return { ...p, downvotes: newDownvotes, userVote: null };
+          } else if (diff > 0) {
+            // Switch to downvote (only if diff > 0)
+            newUpvotes = newUpvotes.filter(id => id !== user._id);
+            if (!newDownvotes.includes(user._id)) newDownvotes.push(user._id);
+            return { ...p, upvotes: newUpvotes, downvotes: newDownvotes, userVote: "down" };
+          }
+        }
+  
+        return p;
       })
     );
   
@@ -454,6 +462,7 @@ const CommunityPage = () => {
       body: JSON.stringify({ type }),
     }).catch(err => console.error(err));
   };
+  
   
   
 const [filterCategories, setFilterCategories] = useState([
