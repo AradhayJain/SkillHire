@@ -299,8 +299,15 @@ const CommunityPage = () => {
         const { data } = await api.get(`/post/?${params.toString()}`,{
             headers: { Authorization: `Bearer ${token}` }
         });
-        setPosts(data.posts);
-        setAllPosts(data.posts);
+        const enhancedPosts = data.posts.map(post => {
+          let userVote = null;
+          if (post.upvotes.some(id => id === user._id)) userVote = "up";
+          if (post.downvotes.some(id => id === user._id)) userVote = "down";
+          return { ...post, userVote };
+        });
+    
+        setPosts(enhancedPosts);
+        setAllPosts(enhancedPosts);
       } catch (err) {
         setError("Failed to fetch posts. Please try again later.");
       } finally {
