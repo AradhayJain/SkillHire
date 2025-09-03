@@ -91,7 +91,7 @@ const PostCard = ({ post, onVote, onSave, isSaved, onDelete, currentUser }) => {
     console.log(post);
   },[])
 
-  const netScore = (post.upvotes || 0) - (post.downvotes || 0);
+  const netScore = (post.upvotes.length || 0) - (post.downvotes.length || 0);
   const isOwner = currentUser && post.userId && currentUser._id === post.userId._id;
 
   return (
@@ -410,33 +410,44 @@ const CommunityPage = () => {
       prev.map(p => {
         if (p._id !== postId) return p;
   
-        let newUpvotes = p.upvotes;
-        let newDownvotes = p.downvotes;
+        let newUpvotes = [...p.upvotes];
+        let newDownvotes = [...p.downvotes];
+  
+        // remove current user from both first (reset)
+        newUpvotes = newUpvotes.filter(id => id !== user._id);
+        newDownvotes = newDownvotes.filter(id => id !== user._id);
+  
+        const diff = newUpvotes.length - newDownvotes.length;
   
         if (type === "up") {
-          // prevent double upvote
           if (p.userVote !== "up") {
-            newUpvotes++;
-            if (p.userVote === "down") newDownvotes--; // switching vote
+            newUpvotes.push(user._id);
           }
         } else if (type === "down") {
-          const diff = newUpvotes - newDownvotes;
           if (diff > 0 && p.userVote !== "down") {
-            newDownvotes++;
-            if (p.userVote === "up") newUpvotes--; // switching vote
+            newDownvotes.push(user._id);
           }
         }
   
-        return { ...p, upvotes: newUpvotes, downvotes: newDownvotes, userVote: type };
+        return {
+          ...p,
+          upvotes: newUpvotes,
+          downvotes: newDownvotes,
+          userVote: type,
+        };
       })
     );
   
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/post/${postId}/vote`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ type }),
     }).catch(err => console.error(err));
   };
+  
   
 const [filterCategories, setFilterCategories] = useState([
   { key: 'all', label: 'All Posts' },
