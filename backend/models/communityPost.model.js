@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const communitySchema = new mongoose.Schema({
     description: String,
-    upvotes: { type: Number, default: 0 },
-    downvotes: { type: Number, default: 0 },
+    upvotes: [{type:mongoose.Schema.Types.ObjectId, ref:'User'}],
+    downvotes: [{type:mongoose.Schema.Types.ObjectId, ref:'User'}],
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     resumeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resume' ,required: false },
     tags: [String],

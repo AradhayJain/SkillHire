@@ -413,25 +413,31 @@ const CommunityPage = () => {
         let newUpvotes = p.upvotes;
         let newDownvotes = p.downvotes;
   
-        if (type === "up") newUpvotes++;
-        if (type === "down") newDownvotes++;
-        if(newUpvotes-newDownvotes<0){
-          newUpvotes=0;
-          newDownvotes=0;
+        if (type === "up") {
+          // prevent double upvote
+          if (p.userVote !== "up") {
+            newUpvotes++;
+            if (p.userVote === "down") newDownvotes--; // switching vote
+          }
+        } else if (type === "down") {
+          const diff = newUpvotes - newDownvotes;
+          if (diff > 0 && p.userVote !== "down") {
+            newDownvotes++;
+            if (p.userVote === "up") newUpvotes--; // switching vote
+          }
         }
   
         return { ...p, upvotes: newUpvotes, downvotes: newDownvotes, userVote: type };
       })
     );
   
-    
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/post/${postId}/vote`, {
       method: "POST",
-      
-      headers: { "Content-Type": "application/json",Authorization: `Bearer ${token}`},
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ type }),
     }).catch(err => console.error(err));
   };
+  
 const [filterCategories, setFilterCategories] = useState([
   { key: 'all', label: 'All Posts' },
 ]);

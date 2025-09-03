@@ -155,19 +155,24 @@ export const upvotePost = async (req, res) => {
     try {
       const { postId } = req.params;
       const { type } = req.body; // "up" or "down"
+      const userId = req.user._id; // assuming you have user from auth middleware
   
       const post = await CommunityPost.findById(postId);
       if (!post) return res.status(404).json({ message: "Post not found" });
-      const diff = post.upvotes - post.downvotes;
+  
+      // Remove user from both arrays (reset any previous vote)
+      post.upvotes = post.upvotes.filter(id => id.toString() !== userId.toString());
+      post.downvotes = post.downvotes.filter(id => id.toString() !== userId.toString());
+  
+      const diff = post.upvotes.length - post.downvotes.length;
+  
       if (type === "up") {
-        post.upvotes += 1;
+        // Add user only if not already in upvotes
+        post.upvotes.push(userId);
       } else if (type === "down") {
-        if(diff<=0){
-
-          post.downvotes = post.downvotes;
-        }
-        else{
-          post.downvotes += 1;
+        // Only allow downvote if diff > 0 (so net never goes negative)
+        if (diff > 0) {
+          post.downvotes.push(userId);
         }
       } else {
         return res.status(400).json({ message: "Invalid vote type" });
@@ -179,14 +184,16 @@ export const upvotePost = async (req, res) => {
         message: "Vote recorded",
         post: {
           _id: post._id,
-          upvotes: post.upvotes,
-          downvotes: post.downvotes,
+          upvotes: post.upvotes.length,
+          downvotes: post.downvotes.length,
+          netVotes: post.upvotes.length - post.downvotes.length,
         },
       });
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   };
+  
 
   export const getTopTags = async (req, res) => {
     try {
