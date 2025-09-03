@@ -289,8 +289,7 @@ const CommunityPage = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        setError(null);setPosts(data.posts);
-        setAllPosts(data.posts);
+        setError(null);
         const params = new URLSearchParams();
         if (filters.tags && filters.tags !== 'all') params.append('tags', filters.tags);
         if (filters.sort) params.append('sort', filters.sort);
