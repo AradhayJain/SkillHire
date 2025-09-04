@@ -423,7 +423,7 @@ const CommunityPage = () => {
         if (type === "up") {
           if (p.userVote === "up") {
             // Toggle off
-            newUpvotes = newUpvotes.filter(id => id !== user._id);
+            // newUpvotes = newUpvotes.filter(id => id !== user._id);
             return { ...p, upvotes: newUpvotes, userVote: null };
           } else {
             // Switch to upvote
@@ -438,7 +438,7 @@ const CommunityPage = () => {
   
           if (p.userVote === "down") {
             // Toggle off
-            newDownvotes = newDownvotes.filter(id => id !== user._id);
+            // newDownvotes = newDownvotes.filter(id => id !== user._id);
             return { ...p, downvotes: newDownvotes, userVote: null };
           } else if (diff > 0) {
             // Switch to downvote (only if diff > 0)
