@@ -373,9 +373,9 @@ const AuthPage = ({ type }) => {
 
                   <Button type="submit" loading={loading} className="w-full" size="lg">{isLogin ? 'Sign In' : 'Continue'}</Button>
                   
-                  <div className="relative my-4"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-300 dark:border-slate-700" /></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-slate-50 dark:bg-slate-900 text-slate-500">Or</span></div></div>
+{/*                   <div className="relative my-4"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-300 dark:border-slate-700" /></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-slate-50 dark:bg-slate-900 text-slate-500">Or</span></div></div> */}
                   
-                  <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google login failed. Please try again.')} useOneTap />
+{/*                   <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google login failed. Please try again.')} useOneTap /> */}
 
                   <p className="text-center text-sm text-slate-500 dark:text-slate-400 pt-2">
                     {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
